@@ -1605,7 +1605,7 @@ wheels = [
 [[package]]
 name = "litellm"
 version = "1.81.13"
-source = { git = "https://github.com/softpudding/litellm.git?rev=fix%2Fdashscope-multimodal-support#a9dd15e33cb12870c5514ddd9be917d92eb0305c" }
+source = { git = "https://github.com/softpudding/litellm.git?rev=fix%2Fdashscope-multimodal-support#47aadfc701b03dac179d09ef26ca5d7151c1cbac" }
 dependencies = [
     { name = "aiohttp" },
     { name = "click" },
