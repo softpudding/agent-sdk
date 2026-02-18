@@ -1086,9 +1086,9 @@ class LLM(BaseModel, RetryMixin, NonNativeToolCallingMixin):
             bool: True if model is vision capable. Return False if model not
                 supported by litellm.
         """
-        # Special handling for DashScope Qwen models which support vision
+        # Special handling for DashScope Qwen 3.5 Plus which supports vision
         # but may not be marked as such in litellm's model database
-        if self.model.startswith("dashscope/qwen"):
+        if self.model == "dashscope/qwen3.5-plus":
             import litellm
 
             # Ensure litellm's model_cost has supports_vision=True for this model
@@ -1096,17 +1096,11 @@ class LLM(BaseModel, RetryMixin, NonNativeToolCallingMixin):
             if model_key in litellm.model_cost:
                 litellm.model_cost[model_key]["supports_vision"] = True
             else:
-                # Try to find a similar Qwen model to copy from
-                template_key = None
-                for key in litellm.model_cost:
-                    if key.startswith("dashscope/qwen"):
-                        template_key = key
-                        break
-                if template_key:
-                    litellm.model_cost[model_key] = litellm.model_cost[
-                        template_key
-                    ].copy()
-                    litellm.model_cost[model_key]["supports_vision"] = True
+                # Create a minimal entry if not present
+                litellm.model_cost[model_key] = {
+                    "supports_vision": True,
+                    "litellm_provider": "dashscope",
+                }
             return True
 
         # litellm.supports_vision currently returns False for 'openai/gpt-...' or 'anthropic/claude-...' (with prefixes)  # noqa: E501
