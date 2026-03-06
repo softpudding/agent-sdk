@@ -1779,8 +1779,8 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.81.13"
-source = { git = "https://github.com/softpudding/litellm.git?rev=fix%2Fdashscope-multimodal-support#47aadfc701b03dac179d09ef26ca5d7151c1cbac" }
+version = "1.82.1"
+source = { git = "https://github.com/softpudding/litellm.git?rev=open-browser#5814bfa7d3ab9e7eae6584256a3e9eba169d7215" }
 dependencies = [
     { name = "aiohttp" },
     { name = "click" },
@@ -2400,7 +2400,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=3.0.0" },
     { name = "filelock", specifier = ">=3.20.1" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "litellm", git = "https://github.com/softpudding/litellm.git?rev=fix%2Fdashscope-multimodal-support" },
+    { name = "litellm", git = "https://github.com/softpudding/litellm.git?rev=open-browser" },
     { name = "lmnr", specifier = ">=0.7.24" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "python-frontmatter", specifier = ">=1.1.0" },
