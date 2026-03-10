@@ -1780,7 +1780,7 @@ wheels = [
 [[package]]
 name = "litellm"
 version = "1.82.1"
-source = { git = "https://github.com/softpudding/litellm.git?rev=open-browser#5814bfa7d3ab9e7eae6584256a3e9eba169d7215" }
+source = { git = "https://github.com/softpudding/litellm.git?rev=open-browser#80043a22d98b87ed26efc5ac564911649ca76f7e" }
 dependencies = [
     { name = "aiohttp" },
     { name = "click" },

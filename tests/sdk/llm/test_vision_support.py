@@ -18,6 +18,9 @@ from openhands.sdk.llm import LLM, ImageContent, Message, TextContent
         "litellm_proxy/anthropic/claude-sonnet-4-5-20250929",
         "litellm_proxy/gemini-2.5-flash",
         "litellm_proxy/gemini-3-pro-preview",
+        # DashScope Qwen models with vision support
+        "dashscope/qwen3.5-plus",
+        "dashscope/qwen3.5-flash",
     ],
 )
 def test_vision_is_active_supported_models(model):
