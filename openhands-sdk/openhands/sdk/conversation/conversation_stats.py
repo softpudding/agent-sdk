@@ -56,7 +56,12 @@ class ConversationStats(BaseModel):
         return data
 
     def get_combined_metrics(self) -> Metrics:
-        total_metrics = Metrics()
+        model_name = (
+            next(iter(self.usage_to_metrics.values())).model_name
+            if self.usage_to_metrics
+            else "default"
+        )
+        total_metrics = Metrics(model_name=model_name)
         for metrics in self.usage_to_metrics.values():
             total_metrics.merge(metrics)
         return total_metrics

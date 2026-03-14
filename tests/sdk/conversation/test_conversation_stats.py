@@ -83,6 +83,14 @@ def test_get_combined_metrics(conversation_stats):
     assert (
         combined.accumulated_token_usage.context_window == 8000
     )  # max of 8000 and 4000
+    assert combined.model_name == "gpt-4"
+
+
+def test_get_combined_metrics_empty(conversation_stats):
+    """Test that combined metrics with no usages returns default model_name."""
+    combined = conversation_stats.get_combined_metrics()
+    assert combined.model_name == "default"
+    assert combined.accumulated_cost == 0.0
 
 
 def test_get_metrics_for_usage(conversation_stats):
