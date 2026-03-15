@@ -486,7 +486,7 @@ class AgentBase(DiscriminatedUnionMixin, ABC):
             dumped["tools"] = list(dumped["tools"].keys())
         return dumped
 
-    def get_all_llms(self) -> Generator[LLM, None, None]:
+    def get_all_llms(self) -> Generator[LLM]:
         """Recursively yield unique *base-class* LLM objects reachable from `self`.
 
         - Returns actual object references (not copies).
@@ -576,3 +576,10 @@ class AgentBase(DiscriminatedUnionMixin, ABC):
             Response string, or ``None`` to use the default LLM-based approach.
         """
         return None
+
+    def close(self) -> None:
+        """Clean up agent resources.
+
+        No-op by default; ACPAgent overrides to terminate subprocess.
+        """
+        pass
