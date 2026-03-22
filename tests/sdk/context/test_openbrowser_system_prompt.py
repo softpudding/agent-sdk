@@ -1,0 +1,68 @@
+from pathlib import Path
+
+from openhands.sdk.context.prompts.prompt import render_template
+
+
+PROMPT_DIR = (
+    Path(__file__).resolve().parents[3]
+    / "openhands-sdk"
+    / "openhands"
+    / "sdk"
+    / "agent"
+    / "prompts"
+)
+
+
+def _render_system_prompt(**kwargs) -> str:
+    return render_template(
+        prompt_dir=str(PROMPT_DIR),
+        template_name="system_prompt.j2",
+        security_policy_filename="security_policy.j2",
+        **kwargs,
+    )
+
+
+def test_openbrowser_system_prompt_lists_swipe_and_select_actions() -> None:
+    message = _render_system_prompt()
+
+    assert "click, hover, scroll, swipe, keyboard_input, or select" in message
+    assert "click, hover, scroll, swipe, keyboard_input, select" in message
+
+
+def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
+    message = _render_system_prompt()
+
+    assert 'do not declare it "not found" too early' in message
+    assert (
+        "Scroll is one exploration tool, not the default answer to every miss"
+        in message
+    )
+    assert "ALWAYS try to SCROLL first" not in message
+    assert "icon button next to a visible count or badge" in message
+    assert "keep the same highlight mode and try the next page" in message
+    assert "Do not guess a control's meaning from its appearance" in message
+
+
+def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
+    message = _render_system_prompt()
+
+    assert (
+        "If multiple candidates still fit, narrow the search rather than guessing"
+        in message
+    )
+    assert "Pick the first matching element" not in message
+
+
+def test_openbrowser_system_prompt_limits_agents_md_writes() -> None:
+    message = _render_system_prompt()
+
+    assert "Only add to `AGENTS.md` when the user asks for it" in message
+    assert "Add important insights, patterns, and learnings to this file" not in message
+
+
+def test_openbrowser_system_prompt_softens_troubleshooting_dump() -> None:
+    message = _render_system_prompt()
+
+    assert "reflect on a few plausible sources of the problem" in message
+    assert "without turning the response into a long diagnostic dump" in message
+    assert "5-7 different possible sources of the problem" not in message
