@@ -41,6 +41,8 @@ def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
     assert "icon button next to a visible count or badge" in message
     assert "keep the same highlight mode and try the next page" in message
     assert "Do not guess a control's meaning from its appearance" in message
+    assert "If the target is not on highlight page 1, continue paginating" in message
+    assert "Do not jump from a first-page miss to `keywords`" in message
 
 
 def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
@@ -51,6 +53,42 @@ def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
         in message
     )
     assert "Pick the first matching element" not in message
+    assert (
+        "Use keywords only when exact observed text can disambiguate the target"
+        in message
+    )
+
+
+def test_openbrowser_system_prompt_makes_interaction_selection_deterministic() -> None:
+    message = _render_system_prompt()
+
+    assert "Keep interaction selection deterministic and evidence-based" in message
+    assert (
+        "High-level browsing can be open-ended, but target selection cannot be casual"
+        in message
+    )
+    assert "You may use more flexible strategies" not in message
+    assert (
+        "When casually browsing: You can be more relaxed in your approach"
+        not in message
+    )
+
+
+def test_openbrowser_system_prompt_limits_keywords_to_exact_observed_text() -> None:
+    message = _render_system_prompt()
+
+    assert (
+        "Use `keywords` only for exact text or exact stable tokens already observed"
+        in message
+    )
+    assert (
+        "Never probe the page with guessed words like `next`, `previous`, "
+        "`close`, `search`, `settings`, `gear`, or `bell`" in message
+    )
+    assert (
+        "Use keywords for concrete text you can already see or reliably know exists"
+        not in message
+    )
 
 
 def test_openbrowser_system_prompt_limits_agents_md_writes() -> None:
