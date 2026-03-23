@@ -40,7 +40,8 @@ The highlight tool is your primary discovery mechanism and should be treated as 
 - Exhaust relevant highlight pages unless the page state changed or another strong visual cue shows that scrolling or swiping is required
 - For icon-only or dense toolbar controls, switch to `element_type: "clickable"` and paginate through that set rather than guessing a label
 - If a returned element is marked `swipable`, trust that hint and prefer `swipe` for carousel/gallery navigation instead of guessing `next` or `prev` buttons
-- Use `keywords` only for exact text or exact stable tokens already observed in the current screenshot, highlight HTML, or prior observation from the same task
+- Use `keywords` only when copying exact observed readable text or exact stable tokens already observed in the current screenshot, highlight HTML, or prior observation from the same task
+- If a control has visible readable text, you may use that exact text with `keywords`; if it is icon-only or the text is not clearly readable, continue with highlight pagination instead
 - Never probe the page with guessed words like `next`, `previous`, `close`, `search`, `settings`, `gear`, or `bell`
 </HIGHLIGHT_TRUST_POLICY>
 
@@ -79,7 +80,7 @@ When you use element_interaction tool with an action such as click, hover, scrol
 When the target is not visible, common next steps are:
 - Continue highlight pagination if you are already browsing a relevant element set
 - Re-run highlight with a better element type
-- Use exact-text keywords only when you have already observed the exact text or stable token
+- Use exact-text keywords only when you have already observed exact readable text or an exact stable token
 - Scroll the page if more page content is likely below or above the current viewport
 - Scroll a specific container if the content appears to live inside a modal, panel, sidebar, or list
 - Prefer swipe over scroll when the highlighted region is clearly carousel-like or marked as swipable
@@ -92,7 +93,7 @@ How to Scroll Well:
 - Expect element IDs to change after page movement or layout shifts
 
 **Important**: Scroll is one exploration tool, not the default answer to every miss. Re-highlight, paginate, and change targeting strategy before concluding the page lacks the needed content.
-**Keyword Discipline**: Use keywords only for exact text or exact stable tokens you have already observed. Do not guess a control's meaning from its appearance and search for that guess.
+**Keyword Discipline**: Use keywords only for exact observed readable text or exact stable tokens you have already observed. If a control has visible readable text, you may use that exact text. Do not use icon-only tokens or guessed semantics from appearance.
 </SCROLLING_STRATEGY>
 
 <AMBIGUITY_RESOLUTION>
@@ -109,7 +110,7 @@ When multiple similar elements exist on a page, use this strategy to ensure you 
 2. **Narrow Before Acting**:
    - If multiple candidates still fit, narrow the search rather than guessing
    - Re-highlight with better semantic clues, a better element type, or more complete highlight pagination
-   - Use keywords only when exact observed text can disambiguate the target
+   - Use keywords only when exact observed readable text can disambiguate the target
    - Confirm only when visual AND semantic evidence point to the same target
 
 3. **Hover for Interactive Elements**:

@@ -40,7 +40,7 @@ def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
     assert "ALWAYS try to SCROLL first" not in message
     assert "icon button next to a visible count or badge" in message
     assert "keep the same highlight mode and try the next page" in message
-    assert "Do not guess a control's meaning from its appearance" in message
+    assert "Do not use icon-only tokens or guessed semantics from appearance" in message
     assert "If the target is not on highlight page 1, continue paginating" in message
     assert "Do not jump from a first-page miss to `keywords`" in message
 
@@ -54,8 +54,8 @@ def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
     )
     assert "Pick the first matching element" not in message
     assert (
-        "Use keywords only when exact observed text can disambiguate the target"
-        in message
+        "Use keywords only when exact observed readable text can disambiguate "
+        "the target" in message
     )
 
 
@@ -78,8 +78,12 @@ def test_openbrowser_system_prompt_limits_keywords_to_exact_observed_text() -> N
     message = _render_system_prompt()
 
     assert (
-        "Use `keywords` only for exact text or exact stable tokens already observed"
-        in message
+        "Use `keywords` only when copying exact observed readable text or "
+        "exact stable tokens already observed" in message
+    )
+    assert (
+        "If a control has visible readable text, you may use that exact text "
+        "with `keywords`" in message
     )
     assert (
         "Never probe the page with guessed words like `next`, `previous`, "
