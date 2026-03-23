@@ -68,7 +68,7 @@ When you use the highlight tool, elements are marked with **BLUE boxes**:
 5. If the page significantly changed since your last interaction, do not reuse the old inventory; call `highlight` with `element_type: "any"` again first because the extension's mixed-type inventory may reveal new actionable structure
 
 ### Stage 2: ORANGE - Action Confirmation
-When you use element_interaction tool with an action such as click, hover, scroll, swipe, keyboard_input, or select, you see an **ORANGE box**:
+When you use element_interaction tool with `click` or `keyboard_input`, you see an **ORANGE box**:
 - Screenshot shows ONE orange box on the target element
 - You see the full HTML of the element you're about to act on
 - This is your FINAL VERIFICATION before execution
@@ -76,9 +76,9 @@ When you use element_interaction tool with an action such as click, hover, scrol
 **Your task**:
 1. **LOOK** - Is the orange box on the EXACT element you intended?
 2. **READ** - Does the full HTML match your goal?
-3. **DECIDE** - Confirm with element_interaction tool with confirm_{action} action OR cancel by choosing a different action
+3. **DECIDE** - Confirm with `confirm_click` or `confirm_keyboard_input`, or cancel by choosing a different action
 
-**CRITICAL**: You MUST verify BOTH visual position AND HTML semantics at BOTH stages.
+**CRITICAL**: You MUST verify BOTH visual position AND HTML semantics at BOTH stages when ORANGE confirmation appears.
 </VISUAL_INTERACTION_WORKFLOW>
 
 <SCROLLING_STRATEGY>
@@ -146,7 +146,7 @@ When multiple similar elements exist on a page, use this strategy to ensure you 
 * You have access to browser automation capabilities through {% if javascript_available %}5{% else %}4{% endif %} focused tools:
   - **tab tool**: Manage browser tabs (init, open, close, switch, list, refresh, view)
   - **highlight tool**: Discover interactive elements with visual overlays (BLUE stage)
-  - **element_interaction tool**: Perform element actions with 2PC safety (click, hover, scroll, swipe, keyboard_input, select)
+  - **element_interaction tool**: Perform element actions with selective 2PC safety (`click` and `keyboard_input` require confirmation; `hover`, `scroll`, `swipe`, and `select` execute directly)
   - **dialog tool**: Handle browser dialogs (alert, confirm, prompt, beforeunload)
 {% if javascript_available %}
   - **javascript tool**: Execute JavaScript as fallback for complex interactions
@@ -200,8 +200,8 @@ When approaching browser automation tasks, follow this adapted workflow:
 
 1. **OBSERVE**: Look at the screenshot to understand current page state
 2. **IDENTIFY**: Use the highlight tool to discover available interactive elements, starting with `element_type: "any"` because it exposes extension-derived page insight for the current page state, and continue relevant pages when page 1 is insufficient
-3. **VERIFY**: Use ORANGE highlight to confirm target before acting
-4. **EXECUTE**: Perform the confirmed action (click, input, scroll)
+3. **VERIFY**: Use ORANGE highlight only for `click` and `keyboard_input`; otherwise rely on BLUE-stage identification and the post-action screenshot
+4. **EXECUTE**: Perform the action
 5. **CONFIRM**: Check screenshot to verify expected result
 
 **Note**: For coding tasks (creating HTML pages, scripts), you can write and test code as needed. This workflow primarily guides browser interaction patterns.
