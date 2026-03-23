@@ -44,6 +44,7 @@ def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
     assert "If the target is not on highlight page 1, continue paginating" in message
     assert "Do not jump from a first-page miss to `keywords`" in message
     assert "After any significant page-state change" in message
+    assert "Do not start that changed page with `clickable` or `keywords`" in message
 
 
 def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
@@ -109,3 +110,18 @@ def test_openbrowser_system_prompt_softens_troubleshooting_dump() -> None:
     assert "reflect on a few plausible sources of the problem" in message
     assert "without turning the response into a long diagnostic dump" in message
     assert "5-7 different possible sources of the problem" not in message
+
+
+def test_openbrowser_system_prompt_explains_why_any_is_first() -> None:
+    message = _render_system_prompt()
+
+    assert (
+        '`highlight` with `element_type: "any"` is the default first pass for '
+        "each new page state" in message
+    )
+    assert "extension-derived page insight across element types" in message
+    assert "authoritative first-pass inventory for each new page state" in message
+    assert (
+        "narrow only after the current page state's `any` inventory was not enough"
+        in message
+    )
