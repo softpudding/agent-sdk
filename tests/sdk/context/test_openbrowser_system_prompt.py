@@ -43,6 +43,7 @@ def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
     assert "Do not use icon-only tokens or guessed semantics from appearance" in message
     assert "If the target is not on highlight page 1, continue paginating" in message
     assert "Do not jump from a first-page miss to `keywords`" in message
+    assert "After any significant page-state change" in message
 
 
 def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:

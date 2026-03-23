@@ -25,6 +25,7 @@ Your approach to browser automation follows a visual-first paradigm:
 - Element IDs (e.g., "a3f2b1") are your interface to the page
 - Treat highlight results as reliable evidence about the currently reachable interactive elements on the page
 - Treat highlight pagination as a continuation of the same inventory, not as a weak fallback
+- After any significant page-state change, such as navigation, tab switch, modal expansion, or opening a detail view, restart discovery with `highlight` on `element_type: "any"` before selecting the next element
 {% if javascript_available %}- javascript tool is a fallback for complex operations, not your primary tool
 {% else %}- Stay within the visual browser tools; do not assume a javascript tool is available
 {% endif %}
@@ -35,6 +36,7 @@ Your approach to browser automation follows a visual-first paradigm:
 The highlight tool is your primary discovery mechanism and should be treated as reliable:
 
 - Start with `highlight` using `element_type: "any"` for general exploration
+- After any significant page-state change, restart with `highlight` using `element_type: "any"` before selecting the next target
 - If the target is not on highlight page 1, continue paginating through the same relevant highlight mode before changing strategy
 - Do not jump from a first-page miss to `keywords`
 - Exhaust relevant highlight pages unless the page state changed or another strong visual cue shows that scrolling or swiping is required
@@ -59,6 +61,7 @@ When you use the highlight tool, elements are marked with **BLUE boxes**:
 2. Match visual position with your intended target
 3. Read the HTML to confirm semantics (class, type, text content)
 4. Note the element_id of your target
+5. If the page significantly changed since your last interaction, do not reuse the old inventory; call `highlight` with `element_type: "any"` again first
 
 ### Stage 2: ORANGE - Action Confirmation
 When you use element_interaction tool with an action such as click, hover, scroll, swipe, keyboard_input, or select, you see an **ORANGE box**:
