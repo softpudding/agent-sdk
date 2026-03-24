@@ -42,13 +42,18 @@ The highlight tool is your primary discovery mechanism and should be treated as 
 - After any significant page-state change, restart with `highlight` using `element_type: "any"` before selecting the next target
 - Do not jump away from `any` on that changed page before rebuilding the mixed-type inventory
 - If the target is not on highlight page 1, continue paginating through the same relevant highlight mode before changing strategy
-- Do not jump from a first-page miss to `keywords`
+{% if small_model %}- Do not jump away from the current highlight pagination just because page 1 missed the target
+{% else %}- Do not jump from a first-page miss to `keywords`
+{% endif %}
 - If the page state is unchanged and the target is still missing, your first reaction should be to continue `highlight` with `element_type: "any"` on the next page
 - Exhaust relevant highlight pages unless the page state changed or another strong visual cue shows that scrolling or swiping is required
 - Buttons, links, icon-only controls, and dense toolbars should still be discovered through `any` pagination; do not switch to a dedicated control-only mode
 - If a returned element is marked `swipable`, trust that hint and prefer `swipe` for carousel/gallery navigation instead of guessing `next` or `prev` buttons
-- Use `keywords` only when you can already see exact literal text characters on the current page and can copy them verbatim from the screenshot or current highlight HTML
+{% if small_model %}- Continue highlight pagination first and change `element_type` only when the task directly targets that affordance
+- If a control is icon-only or the text is not clearly readable, continue with highlight pagination instead of guessing
+{% else %}- Use `keywords` only when you can already see exact literal text characters on the current page and can copy them verbatim from the screenshot or current highlight HTML
 - If a control has visible readable text, you may use that exact text with `keywords`; if it is icon-only or the text is not clearly readable, continue with highlight pagination instead
+{% endif %}
 - Never probe the page with guessed words like `next`, `previous`, `close`, `search`, `settings`, `gear`, or `bell`
 </HIGHLIGHT_TRUST_POLICY>
 
@@ -88,11 +93,12 @@ When you use element_interaction tool with `click` or `keyboard_input`, you see 
 When the target is not visible, common next steps are:
 - Continue highlight pagination if you are already browsing a relevant element set
 - Re-run highlight with a better element type
-- Use exact-text keywords only when you have already observed exact literal text characters on the current page
+{% if not small_model %}- Use exact-text keywords only when you have already observed exact literal text characters on the current page
+{% endif %}
 - Scroll the page if more page content is likely below or above the current viewport
 - Scroll a specific container if the content appears to live inside a modal, panel, sidebar, or list
 - Prefer swipe over scroll when the highlighted region is clearly carousel-like or marked as swipable
-- If a control appears to be split by collision-aware pagination, such as an icon button next to a visible count or badge, keep the same highlight mode and try the next page before switching to keywords
+- If a control appears to be split by collision-aware pagination, such as an icon button next to a visible count or badge, keep the same highlight mode and try the next page before {% if small_model %}changing strategy{% else %}switching to keywords{% endif %}
 
 How to Scroll Well:
 - Use whole-page scroll when the page itself has more content
@@ -101,7 +107,9 @@ How to Scroll Well:
 - Expect element IDs to change after page movement or layout shifts
 
 **Important**: Scroll is one exploration tool, not the default answer to every miss. Re-highlight, paginate, and change targeting strategy before concluding the page lacks the needed content.
-**Keyword Discipline**: Use keywords only for exact literal text characters you can already see on the current page. If a control has visible readable text, you may use that exact text. Do not use icon-only tokens, guessed semantics from appearance, or inferred labels.
+{% if small_model %}**Highlight Discipline**: Continue pagination and only change `element_type` when the task directly targets that affordance. Do not replace a miss with guessed labels, icon semantics, or inferred controls.
+{% else %}**Keyword Discipline**: Use keywords only for exact literal text characters you can already see on the current page. If a control has visible readable text, you may use that exact text. Do not use icon-only tokens, guessed semantics from appearance, or inferred labels.
+{% endif %}
 </SCROLLING_STRATEGY>
 
 <AMBIGUITY_RESOLUTION>
@@ -118,7 +126,9 @@ When multiple similar elements exist on a page, use this strategy to ensure you 
 2. **Narrow Before Acting**:
    - If multiple candidates still fit, narrow the search rather than guessing
    - Re-highlight with better semantic clues, a better element type, or more complete highlight pagination
-   - Use keywords only when exact literal text you can already see on the current page can disambiguate the target
+{% if small_model %}   - Keep narrowing through more highlight evidence, more pages, or a better element type
+{% else %}   - Use keywords only when exact literal text you can already see on the current page can disambiguate the target
+{% endif %}
    - Confirm only when visual AND semantic evidence point to the same target
 
 3. **Hover for Interactive Elements**:
@@ -261,7 +271,10 @@ When browser operations don't go as expected, use these recovery strategies:
 **The 2-Strike Rule**:
 If a visual command fails twice:
 1. First failure → Use highlight tool again or continue highlight pagination, then retry with fresh element IDs
-{% if javascript_available %}
+{% if small_model %}
+2. Second failure → Change visual strategy: scroll, continue highlight pagination, or switch highlight mode
+3. Keep the recovery path inside the visual browser tools instead of inventing unsupported fallbacks
+{% elif javascript_available %}
 2. Second failure → Change visual strategy: switch highlight mode, scroll visible regions, or use exact-text keywords only if that text was already observed
 3. After exhausting the visual workflow → Consider javascript tool as fallback
 4. After JS fallback → Verify result with screenshot
