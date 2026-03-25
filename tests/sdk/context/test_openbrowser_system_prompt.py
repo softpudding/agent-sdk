@@ -25,8 +25,8 @@ def _render_system_prompt(**kwargs) -> str:
 def test_openbrowser_system_prompt_lists_swipe_and_select_actions() -> None:
     message = _render_system_prompt()
 
-    assert "click, hover, scroll, swipe, keyboard_input, or select" in message
-    assert "click, hover, scroll, swipe, keyboard_input, select" in message
+    assert "`click` and `keyboard_input` require confirmation" in message
+    assert "`hover`, `scroll`, `swipe`, and `select` execute directly" in message
 
 
 def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
@@ -40,11 +40,17 @@ def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
     assert "ALWAYS try to SCROLL first" not in message
     assert "icon button next to a visible count or badge" in message
     assert "keep the same highlight mode and try the next page" in message
-    assert "Do not use icon-only tokens or guessed semantics from appearance" in message
+    assert (
+        "Do not use icon-only tokens, guessed semantics from appearance, "
+        "or inferred labels." in message
+    )
     assert "If the target is not on highlight page 1, continue paginating" in message
     assert "Do not jump from a first-page miss to `keywords`" in message
     assert "After any significant page-state change" in message
-    assert "Do not start that changed page with `clickable` or `keywords`" in message
+    assert (
+        "Do not jump away from `any` on that changed page before "
+        "rebuilding the mixed-type inventory" in message
+    )
 
 
 def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
@@ -56,8 +62,8 @@ def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
     )
     assert "Pick the first matching element" not in message
     assert (
-        "Use keywords only when exact observed readable text can disambiguate "
-        "the target" in message
+        "Use keywords only when exact literal text you can already see on "
+        "the current page can disambiguate the target" in message
     )
 
 
@@ -80,8 +86,8 @@ def test_openbrowser_system_prompt_limits_keywords_to_exact_observed_text() -> N
     message = _render_system_prompt()
 
     assert (
-        "Use `keywords` only when copying exact observed readable text or "
-        "exact stable tokens already observed" in message
+        "Use `keywords` only when you can already see exact literal text "
+        "characters on the current page" in message
     )
     assert (
         "If a control has visible readable text, you may use that exact text "
@@ -112,6 +118,19 @@ def test_openbrowser_system_prompt_softens_troubleshooting_dump() -> None:
     assert "5-7 different possible sources of the problem" not in message
 
 
+def test_openbrowser_system_prompt_describes_numeric_ephemeral_highlight_ids() -> None:
+    message = _render_system_prompt()
+
+    assert (
+        'Element IDs (e.g., "1", "2", "3") are your interface to the '
+        "latest highlight result" in message
+    )
+    assert "Each new `highlight` call creates a fresh ID set" in message
+    assert "Every new `highlight` response replaces the previous ID set" in message
+    assert "The ORANGE confirmation preview does not create a new ID set" in message
+    assert 'Element IDs (e.g., "a3f2b1") are your interface to the page' not in message
+
+
 def test_openbrowser_system_prompt_explains_why_any_is_first() -> None:
     message = _render_system_prompt()
 
@@ -122,6 +141,6 @@ def test_openbrowser_system_prompt_explains_why_any_is_first() -> None:
     assert "extension-derived page insight across element types" in message
     assert "authoritative first-pass inventory for each new page state" in message
     assert (
-        "narrow only after the current page state's `any` inventory was not enough"
-        in message
+        "carries extension-derived structure and cross-type context that "
+        "narrower passes can hide" in message
     )
