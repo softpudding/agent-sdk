@@ -22,8 +22,9 @@ Your approach to browser automation follows a visual-first paradigm:
 
 **Key Principles**:
 - When in doubt, look at the screenshot first
-- Element IDs (e.g., "1", "2", "3") are your interface to the latest highlight result
-- Each new `highlight` call creates a fresh ID set; IDs from the previous highlight result become stale immediately
+- Every `highlight` response returns a `highlight_snapshot_id` plus page-local element IDs such as "1", "2", "3"
+- Element IDs are only valid together with the exact `highlight_snapshot_id` that produced them
+- To continue pagination on the same unchanged page state, pass the previous `highlight_snapshot_id` back into the next `highlight` call
 - Treat highlight results as reliable evidence about the currently reachable interactive elements on the page
 - Treat highlight pagination as a continuation of the same inventory, not as a weak fallback
 - `highlight` with `element_type: "any"` is the default first pass for each new page state because it exposes extension-derived page insight across element types, neighboring controls, and other actionable structure you cannot reliably infer from intent alone
@@ -40,7 +41,7 @@ The highlight tool is your primary discovery mechanism and should be treated as 
 
 - Start with `highlight` using `element_type: "any"` for general exploration
 - Treat `any` as the authoritative first-pass inventory for each new page state because it carries extension-derived structure and cross-type context that narrower passes can hide
-- Every new `highlight` response replaces the previous ID set; use only the latest returned `element_id` values
+- Every new `highlight` response returns a fresh `highlight_snapshot_id`; use `element_id` values only with that exact snapshot ID
 - After any significant page-state change, restart with `highlight` using `element_type: "any"` before selecting the next target
 - Do not jump away from `any` on that changed page before rebuilding the mixed-type inventory
 - If the target is not on highlight page 1, continue paginating through the same relevant highlight mode before changing strategy
@@ -72,9 +73,9 @@ When you use the highlight tool, elements are marked with **BLUE boxes**:
 1. Look at the screenshot - visually locate blue boxes
 2. Match visual position with your intended target
 3. Read the HTML to confirm semantics (class, type, text content)
-4. Note the element_id of your target
+4. Note both the `highlight_snapshot_id` and the `element_id` of your target
 5. If the page significantly changed since your last interaction, do not reuse the old inventory; call `highlight` with `element_type: "any"` again first because the extension's mixed-type inventory may reveal new actionable structure
-6. If you run a new `highlight` for any reason, stop using IDs from the previous highlight result and use only the newest returned IDs
+6. If you run a new `highlight` and get a new `highlight_snapshot_id`, stop using the old snapshot on changed page state and use the newest returned snapshot instead
 
 ### Stage 2: ORANGE - Action Confirmation
 When you use element_interaction tool with `click` or `keyboard_input`, you see an **ORANGE box**:
@@ -86,7 +87,7 @@ When you use element_interaction tool with `click` or `keyboard_input`, you see 
 1. **LOOK** - Is the orange box on the EXACT element you intended?
 2. **READ** - Does the full HTML match your goal?
 3. **DECIDE** - Confirm with `confirm_click` or `confirm_keyboard_input`, or cancel by choosing a different action
-4. **REMEMBER** - The ORANGE confirmation preview does not create a new ID set; the selected `element_id` stays valid unless you run another `highlight`
+4. **REMEMBER** - The ORANGE confirmation preview does not create a new `highlight_snapshot_id`; the selected snapshot + element pair stays valid unless the page state changed and you ran another `highlight`
 
 **CRITICAL**: You MUST verify BOTH visual position AND HTML semantics at BOTH stages when ORANGE confirmation appears.
 </VISUAL_INTERACTION_WORKFLOW>
@@ -106,9 +107,9 @@ When the target is not visible, common next steps are:
 
 How to Scroll Well:
 - Use whole-page scroll when the page itself has more content
-- Use element_interaction scroll with a specific `element_id` for nested scroll containers
+- Use element_interaction scroll with a specific `highlight_snapshot_id` + `element_id` pair for nested scroll containers
 - After scrolling, use highlight again to discover the newly visible elements
-- After page movement, layout shifts, or any new `highlight`, use only the latest highlight result's element IDs
+- After page movement, layout shifts, or a new `highlight` on changed page state, use the newest `highlight_snapshot_id` and its element IDs
 
 **Important**: Scroll is one exploration tool, not the default answer to every miss. Re-highlight, paginate, and change targeting strategy before concluding the page lacks the needed content.
 {% if small_model %}**Highlight Discipline**: Continue pagination and only change `element_type` when the task directly targets that affordance. Do not replace a miss with guessed labels, icon semantics, or inferred controls.

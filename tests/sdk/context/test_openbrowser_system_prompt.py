@@ -118,16 +118,26 @@ def test_openbrowser_system_prompt_softens_troubleshooting_dump() -> None:
     assert "5-7 different possible sources of the problem" not in message
 
 
-def test_openbrowser_system_prompt_describes_numeric_ephemeral_highlight_ids() -> None:
+def test_openbrowser_system_prompt_describes_snapshot_scoped_highlight_ids() -> None:
     message = _render_system_prompt()
 
     assert (
-        'Element IDs (e.g., "1", "2", "3") are your interface to the '
-        "latest highlight result" in message
+        "Every `highlight` response returns a `highlight_snapshot_id` plus "
+        'page-local element IDs such as "1", "2", "3"' in message
     )
-    assert "Each new `highlight` call creates a fresh ID set" in message
-    assert "Every new `highlight` response replaces the previous ID set" in message
-    assert "The ORANGE confirmation preview does not create a new ID set" in message
+    assert (
+        "Element IDs are only valid together with the exact "
+        "`highlight_snapshot_id` that produced them" in message
+    )
+    assert (
+        "To continue pagination on the same unchanged page state, pass the "
+        "previous `highlight_snapshot_id` back into the next `highlight` call"
+        in message
+    )
+    assert (
+        "The ORANGE confirmation preview does not create a new `highlight_snapshot_id`"
+        in message
+    )
     assert 'Element IDs (e.g., "a3f2b1") are your interface to the page' not in message
 
 
