@@ -154,3 +154,11 @@ def test_openbrowser_system_prompt_explains_why_any_is_first() -> None:
         "carries extension-derived structure and cross-type context that "
         "narrower passes can hide" in message
     )
+
+
+def test_openbrowser_system_prompt_uses_help_tool_for_captcha() -> None:
+    message = _render_system_prompt()
+
+    assert "call `please_help_me`" in message
+    assert "do NOT only say it in assistant text" in message
+    assert "wait for the user's next message" in message

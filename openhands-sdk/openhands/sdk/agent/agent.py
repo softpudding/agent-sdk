@@ -65,6 +65,7 @@ from openhands.sdk.tool.builtins import (
 
 logger = get_logger(__name__)
 maybe_init_laminar()
+PLEASE_HELP_ME_TOOL_NAME = "please_help_me"
 
 # Maximum number of events to scan during init_state defensive checks.
 # SystemPromptEvent must appear within this prefix (at index 0 or 1).
@@ -735,6 +736,8 @@ class Agent(CriticMixin, AgentBase):
                 # Don't set FINISHED - let the agent continue
             else:
                 state.execution_status = ConversationExecutionStatus.FINISHED
+        elif tool.name == PLEASE_HELP_ME_TOOL_NAME:
+            state.execution_status = ConversationExecutionStatus.FINISHED
         return obs_event
 
     def _maybe_emit_vllm_tokens(

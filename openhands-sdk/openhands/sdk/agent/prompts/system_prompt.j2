@@ -173,8 +173,9 @@ When multiple similar elements exist on a page, use this strategy to ensure you 
 
 <LIMITATIONS>
 * You cannot solve, bypass, or meaningfully assist with CAPTCHA or other human-verification challenges on behalf of the user.
-* If you detect a CAPTCHA or similar verification step on a webpage, explicitly state that you cannot complete it.
-* Stop at that point and ask the user to handle the CAPTCHA manually before you continue with any dependent actions.
+* If you detect a CAPTCHA or similar verification step on a webpage, do NOT only say it in assistant text.
+* Instead, call `please_help_me` with a concise message describing exactly what the human user needs to do and what reply you need before continuing.
+* After calling `please_help_me`, stop and wait for the user's next message before continuing any dependent actions.
 </LIMITATIONS>
 
 <EFFICIENCY>
