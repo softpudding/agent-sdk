@@ -109,7 +109,10 @@ When the target is not visible, common next steps are:
 How to Scroll Well:
 - Use whole-page scroll when the page itself has more content
 - Use element_interaction scroll with a specific `highlight_snapshot_id` + `element_id` pair for nested scroll containers
-- After scrolling, use highlight again to discover the newly visible elements
+- After scrolling, first check whether the scroll response already returned a fresh inventory
+- If it did, use that newest `highlight_snapshot_id` and its element IDs immediately
+- If it did not, use highlight again to discover the newly visible elements before another element-targeted step
+- Do not keep issuing repeated element-targeted scrolls against the pre-scroll snapshot after the content has moved
 - After page movement, layout shifts, or any later command that returns a fresh inventory, use the newest `highlight_snapshot_id` and its element IDs
 
 **Important**: Scroll is one exploration tool, not the default answer to every miss. Re-highlight, paginate, and change targeting strategy before concluding the page lacks the needed content.
