@@ -130,9 +130,8 @@ def test_openbrowser_system_prompt_describes_snapshot_scoped_highlight_ids() -> 
         "`highlight_snapshot_id` that produced them" in message
     )
     assert (
-        "To continue pagination on the same unchanged page state, pass the "
-        "previous `highlight_snapshot_id` back into the next `highlight` call"
-        in message
+        "To continue pagination on the same unchanged page state, call "
+        "`highlight` again with the next page number" in message
     )
     assert (
         "The ORANGE confirmation preview does not create a new `highlight_snapshot_id`"

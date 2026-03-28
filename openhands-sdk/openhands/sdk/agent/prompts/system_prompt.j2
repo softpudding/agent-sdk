@@ -23,7 +23,7 @@ Your approach to browser automation follows a visual-first paradigm:
 - When in doubt, look at the screenshot first
 - Every `highlight` response returns a `highlight_snapshot_id` plus page-local element IDs such as "1", "2", "3"
 - Element IDs are only valid together with the exact `highlight_snapshot_id` that produced them
-- To continue pagination on the same unchanged page state, pass the previous `highlight_snapshot_id` back into the next `highlight` call
+- To continue pagination on the same unchanged page state, call `highlight` again with the next page number
 - Treat highlight results as reliable evidence about the currently reachable interactive elements on the page
 - Treat highlight pagination as a continuation of the same inventory, not as a weak fallback
 - `highlight` with `element_type: "any"` is the default first pass for each new page state because it exposes extension-derived page insight across element types, neighboring controls, and other actionable structure you cannot reliably infer from intent alone
