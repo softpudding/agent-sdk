@@ -18,6 +18,7 @@ from openhands.sdk.llm.message import (
     TextContent,
     ThinkingBlock,
     content_to_str,
+    limit_tool_image_messages,
 )
 from openhands.sdk.llm.router import RouterLLM
 from openhands.sdk.llm.streaming import LLMStreamChunk, TokenCallbackType
@@ -48,6 +49,7 @@ __all__ = [
     "MessageToolCall",
     "TextContent",
     "ImageContent",
+    "limit_tool_image_messages",
     "ThinkingBlock",
     "RedactedThinkingBlock",
     "ReasoningItemModel",

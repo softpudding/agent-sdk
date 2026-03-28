@@ -153,6 +153,51 @@ def test_local_conversation_ask_agent(mock_completion, tmp_path, agent):
     assert ask_agent_llm.caching_prompt is True
 
 
+@patch("openhands.sdk.agent.utils.prepare_llm_messages")
+@patch("openhands.sdk.llm.llm.LLM.completion")
+def test_local_conversation_ask_agent_passes_tool_image_window(
+    mock_completion, mock_prepare_llm_messages, tmp_path
+):
+    mock_completion.return_value = create_mock_llm_response(
+        "tool image window response"
+    )
+
+    agent = Agent(
+        llm=LLM(
+            model="gpt-4o-mini",
+            api_key=SecretStr("test-key"),
+            usage_id="test-llm",
+        ),
+        tools=[],
+        tool_image_window=2,
+    )
+    conv = Conversation(
+        agent=agent,
+        persistence_dir=str(tmp_path),
+        workspace=str(tmp_path),
+    )
+
+    mock_prepare_llm_messages.return_value = [
+        Message(role="user", content=[TextContent(text="prepared question")]),
+    ]
+
+    result = conv.ask_agent("What changed?")
+
+    assert result == "tool image window response"
+    mock_prepare_llm_messages.assert_called_once_with(
+        conv.state.events,
+        additional_messages=mock_prepare_llm_messages.call_args.kwargs[
+            "additional_messages"
+        ],
+        tool_image_window=2,
+    )
+    additional_messages = mock_prepare_llm_messages.call_args.kwargs[
+        "additional_messages"
+    ]
+    assert len(additional_messages) == 1
+    assert additional_messages[0].role == "user"
+
+
 @patch("openhands.sdk.llm.llm.LLM.completion")
 def test_local_conversation_ask_agent_copies_llm_config(mock_completion, tmp_path):
     """ask_agent creates LLM with parameters copied from original agent's LLM."""

@@ -18,6 +18,7 @@ from openhands.sdk.event.condenser import Condensation, CondensationRequest
 from openhands.sdk.event.llm_convertible import MessageEvent
 from openhands.sdk.llm import (
     LLM,
+    ImageContent,
     LLMResponse,
     Message,
     MetricsSnapshot,
@@ -29,6 +30,21 @@ def message_event(content: str) -> MessageEvent:
     return MessageEvent(
         llm_message=Message(role="user", content=[TextContent(text=content)]),
         source="user",
+    )
+
+
+def tool_message_event(text: str, image_url: str) -> MessageEvent:
+    return MessageEvent(
+        llm_message=Message(
+            role="tool",
+            name="browser",
+            tool_call_id=f"tool-{image_url.rsplit('/', 1)[-1]}",
+            content=[
+                TextContent(text=text),
+                ImageContent(image_urls=[image_url]),
+            ],
+        ),
+        source="environment",
     )
 
 
@@ -328,6 +344,47 @@ def test_condense_with_token_limit_exceeded(mock_llm: LLM) -> None:
 
     # Verify forgotten events were calculated based on token reduction
     assert len(result.forgotten_event_ids) > 0
+
+
+def test_token_reason_respects_tool_image_window(mock_llm: LLM) -> None:
+    """Test that token-based condensation uses the filtered live image window."""
+    agent_llm = MagicMock(spec=LLM)
+    agent_llm.model = "gpt-4"
+
+    def mock_token_count(messages):
+        total = 0
+        for msg in messages:
+            for content in msg.content:
+                if isinstance(content, TextContent):
+                    total += len(content.text) // 4
+                elif isinstance(content, ImageContent):
+                    total += 100 * len(content.image_urls)
+        return total
+
+    agent_llm.get_token_count.side_effect = mock_token_count
+
+    view = View.from_events(
+        [
+            message_event("intro"),
+            tool_message_event("older tool result", "https://example.com/older.png"),
+            tool_message_event("latest tool result", "https://example.com/latest.png"),
+        ]
+    )
+
+    condenser = LLMSummarizingCondenser(
+        llm=mock_llm,
+        max_size=1000,
+        max_tokens=150,
+        keep_first=0,
+    )
+    windowed_condenser = condenser.model_copy(update={"tool_image_window": 1})
+
+    assert Reason.TOKENS in condenser.get_condensation_reasons(
+        view, agent_llm=agent_llm
+    )
+    assert Reason.TOKENS not in windowed_condenser.get_condensation_reasons(
+        view, agent_llm=agent_llm
+    )
 
 
 def test_condense_with_request_and_events_reasons(mock_llm: LLM) -> None:

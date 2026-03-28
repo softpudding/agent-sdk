@@ -15,7 +15,7 @@ from openhands.sdk.context.view import View
 from openhands.sdk.conversation.types import ConversationTokenCallbackType
 from openhands.sdk.event.base import Event, LLMConvertibleEvent
 from openhands.sdk.event.condenser import Condensation
-from openhands.sdk.llm import LLM, LLMResponse, Message
+from openhands.sdk.llm import LLM, LLMResponse, Message, limit_tool_image_messages
 from openhands.sdk.tool import Action, ToolDefinition
 
 
@@ -121,6 +121,7 @@ def prepare_llm_messages(
     condenser: None = None,
     additional_messages: list[Message] | None = None,
     llm: LLM | None = None,
+    tool_image_window: int | None = None,
 ) -> list[Message]: ...
 
 
@@ -130,6 +131,7 @@ def prepare_llm_messages(
     condenser: CondenserBase,
     additional_messages: list[Message] | None = None,
     llm: LLM | None = None,
+    tool_image_window: int | None = None,
 ) -> list[Message] | Condensation: ...
 
 
@@ -138,6 +140,7 @@ def prepare_llm_messages(
     condenser: CondenserBase | None = None,
     additional_messages: list[Message] | None = None,
     llm: LLM | None = None,
+    tool_image_window: int | None = None,
 ) -> list[Message] | Condensation:
     """Prepare LLM messages from conversation context.
 
@@ -151,6 +154,9 @@ def prepare_llm_messages(
         additional_messages: Optional additional messages to append
         llm: Optional LLM instance from the agent, passed to condenser for
             token counting or other LLM features
+        tool_image_window: Optional number of image-bearing tool messages to keep
+            in the live context. Older tool images are removed while preserving
+            text content. `None` preserves all tool images.
 
     Returns:
         List of messages ready for LLM completion, or a Condensation event
@@ -168,6 +174,16 @@ def prepare_llm_messages(
     # produce a list of events, exactly as expected, or a
     # new condensation that needs to be processed
     if condenser is not None:
+        condenser_fields = getattr(type(condenser), "model_fields", {})
+        if (
+            tool_image_window is not None
+            and "tool_image_window" in condenser_fields
+            and getattr(condenser, "tool_image_window", None) is None
+        ):
+            condenser = condenser.model_copy(
+                update={"tool_image_window": tool_image_window}
+            )
+
         condensation_result = condenser.condense(view, agent_llm=llm)
 
         match condensation_result:
@@ -179,6 +195,7 @@ def prepare_llm_messages(
 
     # Convert events to messages
     messages = LLMConvertibleEvent.events_to_messages(llm_convertible_events)
+    messages = limit_tool_image_messages(messages, tool_image_window)
 
     # Add any additional messages (e.g., user question for ask_agent)
     if additional_messages:

@@ -9,11 +9,22 @@ from unittest.mock import Mock, patch
 import pytest
 from pydantic import Field
 
-from openhands.sdk.agent.utils import make_llm_completion, prepare_llm_messages
+from openhands.sdk.agent.utils import (
+    limit_tool_image_messages,
+    make_llm_completion,
+    prepare_llm_messages,
+)
+from openhands.sdk.context.condenser import LLMSummarizingCondenser
 from openhands.sdk.context.condenser.base import CondenserBase
 from openhands.sdk.context.view import View
 from openhands.sdk.event import Condensation, MessageEvent
-from openhands.sdk.llm import LLM, LLMResponse, Message, TextContent
+from openhands.sdk.llm import (
+    LLM,
+    ImageContent,
+    LLMResponse,
+    Message,
+    TextContent,
+)
 from openhands.sdk.tool import Action, Observation, ToolDefinition
 
 
@@ -27,6 +38,21 @@ def mock_llm():
     """Create a mock LLM for testing."""
     llm = Mock(spec=LLM)
     llm.uses_responses_api.return_value = False
+    llm.openrouter_site_url = None
+    llm.openrouter_app_name = None
+    llm.aws_access_key_id = None
+    llm.aws_secret_access_key = None
+    llm.aws_region_name = None
+    llm._metrics = None
+    llm.model = "test-model"
+    llm.log_completions = False
+    llm.log_completions_folder = None
+    llm.custom_tokenizer = None
+    llm.base_url = None
+    llm.reasoning_effort = None
+    llm.temperature = 0.0
+    llm.input_cost_per_token = None
+    llm.output_cost_per_token = None
     return llm
 
 
@@ -73,6 +99,35 @@ def sample_messages():
         Message(
             role="user",
             content=[TextContent(text="I'll help you with that task")],
+        ),
+    ]
+
+
+@pytest.fixture
+def sample_tool_messages():
+    """Create sample tool messages with image content for filtering tests."""
+    return [
+        Message(
+            role="tool",
+            name="mock_tool",
+            tool_call_id="tool-1",
+            content=[
+                TextContent(text="older tool result"),
+                ImageContent(image_urls=["https://example.com/older.png"]),
+            ],
+        ),
+        Message(
+            role="assistant",
+            content=[TextContent(text="assistant response")],
+        ),
+        Message(
+            role="tool",
+            name="mock_tool",
+            tool_call_id="tool-2",
+            content=[
+                TextContent(text="latest tool result"),
+                ImageContent(image_urls=["https://example.com/latest.png"]),
+            ],
         ),
     ]
 
@@ -254,6 +309,91 @@ def test_prepare_llm_messages_empty_events(mock_events_to_messages, mock_from_ev
     assert result == []
     mock_from_events.assert_called_once_with([])
     mock_events_to_messages.assert_called_once_with([])
+
+
+def test_limit_tool_image_messages_keeps_latest_tool_image(sample_tool_messages):
+    result = limit_tool_image_messages(sample_tool_messages, tool_image_window=1)
+
+    assert result[0].content == [TextContent(text="older tool result")]
+    assert result[1] == sample_tool_messages[1]
+    assert result[2] == sample_tool_messages[2]
+
+
+def test_limit_tool_image_messages_preserves_non_tool_images():
+    messages = [
+        Message(
+            role="user",
+            content=[
+                TextContent(text="user image"),
+                ImageContent(image_urls=["https://example.com/user.png"]),
+            ],
+        ),
+        Message(
+            role="tool",
+            name="mock_tool",
+            tool_call_id="tool-1",
+            content=[
+                TextContent(text="tool image"),
+                ImageContent(image_urls=["https://example.com/tool.png"]),
+            ],
+        ),
+    ]
+
+    result = limit_tool_image_messages(messages, tool_image_window=0)
+
+    assert result[0] == messages[0]
+    assert result[1].content == [TextContent(text="tool image")]
+
+
+@patch("openhands.sdk.agent.utils.View.from_events")
+@patch("openhands.sdk.event.base.LLMConvertibleEvent.events_to_messages")
+def test_prepare_llm_messages_applies_tool_image_window(
+    mock_events_to_messages, mock_from_events, sample_events, sample_tool_messages
+):
+    mock_view = Mock(spec=View)
+    mock_view.events = sample_events
+    mock_from_events.return_value = mock_view
+    mock_events_to_messages.return_value = sample_tool_messages
+
+    result = prepare_llm_messages(sample_events, tool_image_window=1)
+
+    assert result[0].content == [TextContent(text="older tool result")]
+    assert result[2] == sample_tool_messages[2]
+
+
+@patch("openhands.sdk.agent.utils.View.from_events")
+@patch("openhands.sdk.event.base.LLMConvertibleEvent.events_to_messages")
+def test_prepare_llm_messages_syncs_tool_image_window_to_condenser(
+    mock_events_to_messages,
+    mock_from_events,
+    sample_events,
+    sample_messages,
+    mock_llm,
+):
+    mock_view = Mock(spec=View)
+    mock_view.events = sample_events
+    mock_from_events.return_value = mock_view
+    mock_events_to_messages.return_value = sample_messages
+
+    condenser = LLMSummarizingCondenser(llm=mock_llm)
+
+    with patch.object(
+        LLMSummarizingCondenser,
+        "condense",
+        autospec=True,
+        return_value=mock_view,
+    ) as mock_condense:
+        prepare_llm_messages(
+            sample_events,
+            condenser=condenser,
+            llm=mock_llm,
+            tool_image_window=2,
+        )
+
+    effective_condenser = mock_condense.call_args[0][0]
+    assert effective_condenser is not condenser
+    assert effective_condenser.tool_image_window == 2
+    assert condenser.tool_image_window is None
 
 
 # ---------------------------------------------------------------------------

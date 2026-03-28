@@ -46,6 +46,15 @@ class LLMSummarizingCondenser(RollingCondenser):
     llm: LLM
     max_size: int = Field(default=240, gt=0)
     max_tokens: int | None = None
+    tool_image_window: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Optional rolling window for image-bearing tool messages retained when "
+            "estimating live prompt token usage. Older tool images are ignored for "
+            "token-based condensation decisions while their text content remains."
+        ),
+    )
 
     keep_first: int = Field(default=2, ge=0)
     """Minimum number of events to preserve at the start of the view. The first
@@ -103,7 +112,11 @@ class LLMSummarizingCondenser(RollingCondenser):
 
         # Reason 2: Token limit is provided and exceeded.
         if self.max_tokens and agent_llm:
-            total_tokens = get_total_token_count(view.events, agent_llm)
+            total_tokens = get_total_token_count(
+                view.events,
+                agent_llm,
+                tool_image_window=self.tool_image_window,
+            )
             if total_tokens > self.max_tokens:
                 reasons.add(Reason.TOKENS)
 
@@ -230,7 +243,11 @@ class LLMSummarizingCondenser(RollingCondenser):
             assert self.max_tokens is not None
             assert agent_llm is not None
 
-            total_tokens = get_total_token_count(view.events, agent_llm)
+            total_tokens = get_total_token_count(
+                view.events,
+                agent_llm,
+                tool_image_window=self.tool_image_window,
+            )
             tokens_to_reduce = total_tokens - (self.max_tokens // 2)
 
             suffix_events_to_keep.add(
@@ -238,6 +255,7 @@ class LLMSummarizingCondenser(RollingCondenser):
                     events=view.events[self.keep_first :],
                     llm=agent_llm,
                     token_reduction=tokens_to_reduce,
+                    tool_image_window=self.tool_image_window,
                 )
             )
 

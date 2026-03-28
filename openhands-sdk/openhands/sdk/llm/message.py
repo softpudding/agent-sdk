@@ -706,3 +706,40 @@ def content_to_str(contents: Sequence[TextContent | ImageContent]) -> list[str]:
         elif isinstance(content_item, ImageContent):
             text_parts.append(f"[Image: {len(content_item.image_urls)} URLs]")
     return text_parts
+
+
+def limit_tool_image_messages(
+    messages: Sequence[Message], tool_image_window: int | None
+) -> list[Message]:
+    """Limit images retained in tool messages while preserving text content."""
+
+    output = list(messages)
+    if tool_image_window is None:
+        return output
+
+    image_tool_indices = [
+        index
+        for index, message in enumerate(messages)
+        if message.role == "tool" and message.contains_image
+    ]
+    if len(image_tool_indices) <= tool_image_window:
+        return output
+
+    keep_indices = (
+        set(image_tool_indices[-tool_image_window:]) if tool_image_window > 0 else set()
+    )
+
+    for index, message in enumerate(messages):
+        if (
+            message.role != "tool"
+            or index in keep_indices
+            or not message.contains_image
+        ):
+            continue
+
+        filtered_content = [
+            item for item in message.content if not isinstance(item, ImageContent)
+        ]
+        output[index] = message.model_copy(update={"content": filtered_content})
+
+    return output

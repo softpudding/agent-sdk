@@ -826,7 +826,9 @@ class LocalConversation(BaseConversation):
         )
 
         messages = prepare_llm_messages(
-            self.state.events, additional_messages=[user_message]
+            self.state.events,
+            additional_messages=[user_message],
+            tool_image_window=self.agent.tool_image_window,
         )
 
         # Get or create the specialized ask-agent LLM

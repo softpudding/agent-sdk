@@ -8,7 +8,7 @@ from openhands.sdk.context.condenser.utils import (
     get_total_token_count,
 )
 from openhands.sdk.event.llm_convertible import MessageEvent
-from openhands.sdk.llm import LLM, Message, TextContent
+from openhands.sdk.llm import LLM, ImageContent, Message, TextContent
 
 
 def message_event(content: str) -> MessageEvent:
@@ -16,6 +16,22 @@ def message_event(content: str) -> MessageEvent:
     return MessageEvent(
         llm_message=Message(role="user", content=[TextContent(text=content)]),
         source="user",
+    )
+
+
+def tool_message_event(text: str, image_url: str) -> MessageEvent:
+    """Helper function to create a tool MessageEvent with image content."""
+    return MessageEvent(
+        llm_message=Message(
+            role="tool",
+            name="browser",
+            tool_call_id=f"tool-{image_url.rsplit('/', 1)[-1]}",
+            content=[
+                TextContent(text=text),
+                ImageContent(image_urls=[image_url]),
+            ],
+        ),
+        source="environment",
     )
 
 
@@ -77,6 +93,22 @@ class TestGetTotalTokenCount:
         call_args = mock_llm.get_token_count.call_args[0][0]  # type: ignore
         assert isinstance(call_args, list)
         assert all(isinstance(msg, Message) for msg in call_args)
+
+    def test_tool_image_window_filters_older_tool_images(self, mock_llm: LLM):
+        """Test that token counting drops older tool images while keeping text."""
+        events = [
+            tool_message_event("older tool result", "https://example.com/older.png"),
+            tool_message_event("latest tool result", "https://example.com/latest.png"),
+        ]
+
+        get_total_token_count(events, mock_llm, tool_image_window=1)
+
+        messages = mock_llm.get_token_count.call_args[0][0]  # type: ignore
+        assert messages[0].content == [TextContent(text="older tool result")]
+        assert messages[1].content == [
+            TextContent(text="latest tool result"),
+            ImageContent(image_urls=["https://example.com/latest.png"]),
+        ]
 
 
 class TestGetShortestPrefixAboveTokenCount:

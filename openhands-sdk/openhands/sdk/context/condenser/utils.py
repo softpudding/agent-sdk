@@ -1,12 +1,13 @@
 from collections.abc import Sequence
 
 from openhands.sdk.event.base import LLMConvertibleEvent
-from openhands.sdk.llm import LLM
+from openhands.sdk.llm import LLM, limit_tool_image_messages
 
 
 def get_total_token_count(
     events: Sequence[LLMConvertibleEvent],
     llm: LLM,
+    tool_image_window: int | None = None,
 ) -> int:
     """Calculate the total token count for a list of LLM convertible events.
 
@@ -18,6 +19,9 @@ def get_total_token_count(
         events: List of LLM convertible events to count tokens for
         llm: The LLM instance to use for token counting (uses the litellm's token
             counting utilities)
+        tool_image_window: Optional number of image-bearing tool messages to keep
+            when estimating the live prompt size. Older tool images are removed
+            while preserving text content.
 
     Returns:
         Total token count for all events converted to messages
@@ -35,6 +39,7 @@ def get_total_token_count(
         >>> print(f"Total tokens: {token_count}")
     """
     messages = LLMConvertibleEvent.events_to_messages(list(events))
+    messages = limit_tool_image_messages(messages, tool_image_window)
     return llm.get_token_count(messages)
 
 
@@ -42,6 +47,7 @@ def get_shortest_prefix_above_token_count(
     events: Sequence[LLMConvertibleEvent],
     llm: LLM,
     token_count: int,
+    tool_image_window: int | None = None,
 ) -> int:
     """Find the length of the shortest prefix whose token count exceeds the target.
 
@@ -53,6 +59,8 @@ def get_shortest_prefix_above_token_count(
         events: List of LLM convertible events to search through
         llm: The LLM instance to use for token counting (uses the model's tokenizer)
         token_count: The target token count threshold
+        tool_image_window: Optional number of image-bearing tool messages to keep
+            when estimating the live prompt size.
 
     Returns:
         The length of the shortest prefix that exceeds the token count.
@@ -77,7 +85,7 @@ def get_shortest_prefix_above_token_count(
         return 0
 
     # Check if all events combined don't exceed the token count
-    total_tokens = get_total_token_count(events, llm)
+    total_tokens = get_total_token_count(events, llm, tool_image_window)
     if total_tokens <= token_count:
         return len(events)
 
@@ -86,7 +94,7 @@ def get_shortest_prefix_above_token_count(
 
     while left < right:
         mid = (left + right) // 2
-        prefix_tokens = get_total_token_count(events[:mid], llm)
+        prefix_tokens = get_total_token_count(events[:mid], llm, tool_image_window)
 
         if prefix_tokens > token_count:
             # This prefix exceeds the count, try to find a shorter one
@@ -102,6 +110,7 @@ def get_suffix_length_for_token_reduction(
     events: Sequence[LLMConvertibleEvent],
     llm: LLM,
     token_reduction: int,
+    tool_image_window: int | None = None,
 ) -> int:
     """Find how many suffix events can be kept while reducing tokens by target amount.
 
@@ -114,6 +123,8 @@ def get_suffix_length_for_token_reduction(
         events: List of LLM convertible events
         llm: The LLM instance to use for token counting (uses the model's tokenizer)
         token_reduction: The minimum number of tokens to reduce by
+        tool_image_window: Optional number of image-bearing tool messages to keep
+            when estimating the live prompt size.
 
     Returns:
         The number of events from the end that can be kept (suffix length).
@@ -141,7 +152,9 @@ def get_suffix_length_for_token_reduction(
         return len(events)
 
     # Find the shortest prefix that exceeds the token reduction target
-    prefix_length = get_shortest_prefix_above_token_count(events, llm, token_reduction)
+    prefix_length = get_shortest_prefix_above_token_count(
+        events, llm, token_reduction, tool_image_window
+    )
 
     # The suffix length is what remains after removing the prefix
     suffix_length = len(events) - prefix_length

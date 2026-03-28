@@ -159,6 +159,16 @@ class AgentBase(DiscriminatedUnionMixin, ABC):
         description="Optional kwargs to pass to the system prompt Jinja2 template.",
         examples=[{"cli_mode": True}],
     )
+    tool_image_window: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Optional rolling window for image-bearing tool messages retained in the "
+            "live LLM context. When set, older tool message images are dropped while "
+            "their text content remains. `None` preserves all tool images."
+        ),
+        examples=[None, 0, 1, 3],
+    )
 
     condenser: CondenserBase | None = Field(
         default=None,

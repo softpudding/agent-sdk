@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from litellm.types.utils import ModelResponse
@@ -137,3 +137,26 @@ def test_agent_step_model_features_gate_to_responses_or_completion(model, expect
 
     assert llm._calls == [expected]
     assert any(isinstance(e, MessageEvent) for e in events)
+
+
+@patch("openhands.sdk.agent.agent.prepare_llm_messages")
+def test_agent_step_passes_tool_image_window_to_message_preparation(
+    mock_prepare_llm_messages,
+):
+    llm = DummyLLM(model="test-model", force_responses=False)
+    agent = Agent(llm=llm, tools=[], tool_image_window=2)
+    convo = Conversation(agent=agent)
+    convo._ensure_agent_ready()
+
+    mock_prepare_llm_messages.return_value = [
+        Message(role="user", content=[]),
+    ]
+
+    agent.step(convo, on_event=lambda _event: None)
+
+    mock_prepare_llm_messages.assert_called_once_with(
+        convo.state.events,
+        condenser=agent.condenser,
+        llm=agent.llm,
+        tool_image_window=2,
+    )
