@@ -76,6 +76,10 @@ def test_openbrowser_system_prompt_prefers_visual_discovery_before_keywords() ->
         "continue paginating" in message
     )
     assert (
+        "If dense UI, a sidebar, a tab strip, or collision-aware label placement "
+        "may have split a likely target across highlight pages" in message
+    )
+    assert (
         "Use `keywords` only when you can already see exact literal text "
         "characters on the current page" in message
     )
@@ -114,7 +118,10 @@ def test_openbrowser_system_prompt_uses_yellow_confirmation_language() -> None:
         "The YELLOW confirmation preview keeps the chosen `element_id` pending "
         "for confirmation" in message
     )
-    assert "verify both visual position and HTML semantics before confirming" in message
+    assert (
+        "verify visual position first and use any explicit preview text or "
+        "metadata only as supporting evidence" in message
+    )
 
 
 def test_openbrowser_system_prompt_guides_detail_views_and_scroll() -> None:
@@ -180,11 +187,16 @@ def test_openbrowser_system_prompt_uses_explicit_small_model_sop() -> None:
         in message
     )
     assert (
+        "If dense UI, a sidebar, a tab strip, or collision-aware label placement "
+        "may have split the target across pages, keep paginating that same mode "
+        "before changing strategy." in message
+    )
+    assert (
         "Prefer geometry fixes before more discovery when the target is already "
         "visible but poorly positioned." in message
     )
     assert (
         "use `keywords` only for exact visible text already on the current page"
-        in message
+        not in message
     )
     assert "Use judgment, but keep these priorities:" not in message
