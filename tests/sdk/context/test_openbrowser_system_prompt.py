@@ -22,124 +22,83 @@ def _render_system_prompt(**kwargs) -> str:
     )
 
 
-def test_openbrowser_system_prompt_lists_swipe_and_select_actions() -> None:
+def test_openbrowser_system_prompt_stays_browser_focused() -> None:
     message = _render_system_prompt()
 
-    assert "`click` and `keyboard_input` require confirmation" in message
-    assert "`hover`, `scroll`, `swipe`, and `select` execute directly" in message
+    assert "browser automation expert" in message
+    assert "Use browser tools for web tasks" in message
+    assert "When committing changes, use `git status`" not in message
+    assert "When terminating processes:" not in message
+    assert "If you encounter missing dependencies:" not in message
 
 
-def test_openbrowser_system_prompt_does_not_force_scroll_first() -> None:
+def test_openbrowser_system_prompt_lists_browser_tools() -> None:
     message = _render_system_prompt()
 
-    assert 'do not declare it "not found" too early' in message
-    assert (
-        "Scroll is one exploration tool, not the default answer to every miss"
-        in message
-    )
-    assert "ALWAYS try to SCROLL first" not in message
-    assert "icon button next to a visible count or badge" in message
-    assert "keep the same highlight mode and try the next page" in message
-    assert (
-        "Do not use icon-only tokens, guessed semantics from appearance, "
-        "or inferred labels." in message
-    )
-    assert "If the target is not on highlight page 1, continue paginating" in message
-    assert "Do not jump from a first-page miss to `keywords`" in message
-    assert "After any significant page-state change" in message
-    assert (
-        "Do not jump away from `any` on that changed page before "
-        "rebuilding the mixed-type inventory" in message
-    )
+    assert "- `tab`: manage browser tabs" in message
+    assert "- `highlight`: discover visible interactive elements" in message
+    assert "- `element_interaction`: interact with visible elements" in message
+    assert "- `dialog`: handle browser dialogs" in message
 
 
-def test_openbrowser_system_prompt_prefers_narrowing_over_first_match() -> None:
+def test_openbrowser_system_prompt_describes_visual_grounding() -> None:
     message = _render_system_prompt()
 
     assert (
-        "If multiple candidates still fit, narrow the search rather than guessing"
-        in message
+        "Outside of the YELLOW confirmation preview for `click` and "
+        "`keyboard_input`, when a browser action returns a screenshot" in message
     )
-    assert "Pick the first matching element" not in message
     assert (
-        "Use keywords only when exact literal text you can already see on "
-        "the current page can disambiguate the target" in message
+        "treat that screenshot as the default `highlight` "
+        '`element_type: "any"` page 1 observation' in message
+    )
+    assert (
+        "Treat the returned `element_id`s as the working inventory of "
+        "currently visible interactive elements." in message
+    )
+    assert (
+        "Use `tab view` only when you explicitly need the clean raw screenshot "
+        "without overlays." in message
     )
 
 
-def test_openbrowser_system_prompt_makes_interaction_selection_deterministic() -> None:
+def test_openbrowser_system_prompt_prefers_visual_discovery_before_keywords() -> None:
     message = _render_system_prompt()
 
-    assert "Keep interaction selection deterministic and evidence-based" in message
+    assert "Treat `any` as the default first pass for a new page state" in message
     assert (
-        "High-level browsing can be open-ended, but target selection cannot be casual"
-        in message
+        "If the target is not on highlight page 1 and the page state is unchanged, "
+        "continue paginating" in message
     )
-    assert "You may use more flexible strategies" not in message
-    assert (
-        "When casually browsing: You can be more relaxed in your approach"
-        not in message
-    )
-
-
-def test_openbrowser_system_prompt_limits_keywords_to_exact_observed_text() -> None:
-    message = _render_system_prompt()
-
     assert (
         "Use `keywords` only when you can already see exact literal text "
         "characters on the current page" in message
     )
     assert (
-        "If a control has visible readable text, you may use that exact text "
-        "with `keywords`" in message
-    )
-    assert (
         "Never probe the page with guessed words like `next`, `previous`, "
-        "`close`, `search`, `settings`, `gear`, or `bell`" in message
-    )
-    assert (
-        "Use keywords for concrete text you can already see or reliably know exists"
-        not in message
+        "`close`, `search`, `settings`, `gear`, or `bell`." in message
     )
 
 
-def test_openbrowser_system_prompt_limits_agents_md_writes() -> None:
-    message = _render_system_prompt()
-
-    assert "Only add to `AGENTS.md` when the user asks for it" in message
-    assert "Add important insights, patterns, and learnings to this file" not in message
-
-
-def test_openbrowser_system_prompt_softens_troubleshooting_dump() -> None:
-    message = _render_system_prompt()
-
-    assert "reflect on a few plausible sources of the problem" in message
-    assert "without turning the response into a long diagnostic dump" in message
-    assert "5-7 different possible sources of the problem" not in message
-
-
-def test_openbrowser_system_prompt_describes_default_interactive_observations() -> None:
+def test_openbrowser_system_prompt_requires_element_id_grounded_reasoning() -> None:
     message = _render_system_prompt()
 
     assert (
-        "Outside of the YELLOW confirmation preview for `click` and "
-        "`keyboard_input`, when a browser action returns a screenshot and that "
-        "action is not `tab view`, treat that screenshot as the default "
-        '`highlight` `element_type: "any"` page 1 observation' in message
+        "In your reasoning, explicitly name the candidate `element_id` values "
+        "you are considering before you act." in message
     )
     assert (
-        "Treat the returned `element_id`s as the working inventory of "
-        "currently visible interactive elements" in message
+        'Do not reason only in vague spatial language like "the button on the '
+        'right" when a visible `element_id` exists.' in message
     )
     assert (
-        "Use `tab view` only when you explicitly need the clean raw screenshot "
-        "without overlays" in message
+        'Good examples:\n- "`A1H` is the likely Search button because it is in '
+        "the top-right toolbar" in message
     )
     assert (
-        "Use `highlight` deliberately for pagination, type-specific discovery, "
-        "or rebuilding the mixed-type inventory after the page state changed" in message
+        'Bad example:\n- "I will click the top-right button" without naming the '
+        "visible `element_id`." in message
     )
-    assert "highlight_snapshot_id" not in message
 
 
 def test_openbrowser_system_prompt_uses_yellow_confirmation_language() -> None:
@@ -150,91 +109,22 @@ def test_openbrowser_system_prompt_uses_yellow_confirmation_language() -> None:
         "The YELLOW confirmation preview keeps the chosen `element_id` pending "
         "for confirmation" in message
     )
-    assert "ORANGE" not in message
+    assert "verify both visual position and HTML semantics before confirming" in message
 
 
-def test_openbrowser_system_prompt_requires_element_id_grounded_reasoning() -> None:
+def test_openbrowser_system_prompt_guides_detail_views_and_scroll() -> None:
     message = _render_system_prompt()
 
-    assert (
-        "In your reasoning, explicitly name the candidate `element_id` values "
-        "you are considering before you act" in message
-    )
-    assert (
-        'Do not reason only in vague spatial language like "the button on the '
-        'right" when a visible `element_id` exists' in message
-    )
-    assert (
-        'Good: "`A1H` is the likely Search button because it is in the '
-        "top-right toolbar" in message
-    )
-    assert (
-        "No matching `element_id` appears in the current `any` page 1 "
-        "observation" in message
-    )
-    assert (
-        'Bad: "I will click the top-right button" without naming the visible '
-        "`element_id`." in message
-    )
-
-
-def test_openbrowser_system_prompt_encourages_detail_views_for_preview_items() -> None:
-    message = _render_system_prompt()
-
-    assert (
-        "Feeds, search results, grids, cards, and post previews are often "
-        "staging views rather than the best place to finish a task." in message
-    )
+    assert 'Do not declare something "not found" too early.' in message
     assert (
         "Opening the card/post/detail view is encouraged when it gives you "
         "clearer targets, fuller context, or more reliable controls." in message
     )
     assert (
-        "actions such as like, favorite, comment, follow, share, or open are "
-        "usually still available there with better context" in message
+        "Scroll to improve geometry when the target is visible but cramped, "
+        "near a viewport edge, or partially occluded" in message
     )
-    assert (
-        "This card only shows a preview, so opening the post detail is the "
-        "flexible move" in message
-    )
-
-
-def test_openbrowser_system_prompt_repositions_occluded_targets_with_scroll() -> None:
-    message = _render_system_prompt()
-
-    assert (
-        "If the intended control is visible but cramped, near a viewport edge, "
-        "or partially occluded by sticky UI, floating bars, badges, or "
-        "overlays, scroll to reposition it before acting." in message
-    )
-    assert (
-        "Scroll to improve geometry when the target is partly occluded, "
-        "squeezed against another element, or too close to a sticky "
-        "header/footer or viewport edge" in message
-    )
-    assert (
-        "Scroll is also for geometry, not just discovery: use it to move a "
-        "partly covered target into a cleaner, more clickable position" in message
-    )
-    assert (
-        "The target button is visible but crowded by neighboring UI, so I "
-        "should scroll a bit to reposition it before clicking." in message
-    )
-
-
-def test_openbrowser_system_prompt_explains_why_any_is_first() -> None:
-    message = _render_system_prompt()
-
-    assert (
-        '`highlight` with `element_type: "any"` is the default first pass for '
-        "each new page state" in message
-    )
-    assert "extension-derived page insight across element types" in message
-    assert "authoritative first-pass inventory for each new page state" in message
-    assert (
-        "carries extension-derived structure and cross-type context that "
-        "narrower passes can hide" in message
-    )
+    assert "Scroll is also for geometry, not just discovery" in message
 
 
 def test_openbrowser_system_prompt_uses_help_tool_for_captcha() -> None:
@@ -243,3 +133,27 @@ def test_openbrowser_system_prompt_uses_help_tool_for_captcha() -> None:
     assert "call `please_help_me`" in message
     assert "do NOT only say it in assistant text" in message
     assert "wait for the user's next message" in message
+
+
+def test_openbrowser_system_prompt_uses_large_model_guidance_by_default() -> None:
+    message = _render_system_prompt()
+
+    assert "Use judgment, but keep these priorities:" in message
+    assert "- current observation before new discovery" in message
+    assert "Use this browser SOP strictly:" not in message
+
+
+def test_openbrowser_system_prompt_uses_explicit_small_model_sop() -> None:
+    message = _render_system_prompt(small_model=True)
+
+    assert "Use this browser SOP strictly:" in message
+    assert "If page 1 misses the target and the page state is unchanged" in message
+    assert (
+        "Only after pagination is insufficient, choose one of these next moves:"
+        in message
+    )
+    assert (
+        "use `keywords` only for exact visible text already on the current page"
+        in message
+    )
+    assert "Use judgment, but keep these priorities:" not in message
