@@ -118,26 +118,64 @@ def test_openbrowser_system_prompt_softens_troubleshooting_dump() -> None:
     assert "5-7 different possible sources of the problem" not in message
 
 
-def test_openbrowser_system_prompt_describes_snapshot_scoped_highlight_ids() -> None:
+def test_openbrowser_system_prompt_describes_default_interactive_observations() -> None:
     message = _render_system_prompt()
 
     assert (
-        "Every `highlight` response returns a `highlight_snapshot_id` plus "
-        'page-local element IDs such as "1", "2", "3"' in message
+        "Outside of the YELLOW confirmation preview for `click` and "
+        "`keyboard_input`, when a browser action returns a screenshot and that "
+        "action is not `tab view`, treat that screenshot as the default "
+        '`highlight` `element_type: "any"` page 1 observation' in message
     )
     assert (
-        "Element IDs are only valid together with the exact "
-        "`highlight_snapshot_id` that produced them" in message
+        "Treat the returned `element_id`s as the working inventory of "
+        "currently visible interactive elements" in message
     )
     assert (
-        "To continue pagination on the same unchanged page state, call "
-        "`highlight` again with the next page number" in message
+        "Use `tab view` only when you explicitly need the clean raw screenshot "
+        "without overlays" in message
     )
     assert (
-        "The ORANGE confirmation preview does not create a new `highlight_snapshot_id`"
-        in message
+        "Use `highlight` deliberately for pagination, type-specific discovery, "
+        "or rebuilding the mixed-type inventory after the page state changed" in message
     )
-    assert 'Element IDs (e.g., "a3f2b1") are your interface to the page' not in message
+    assert "highlight_snapshot_id" not in message
+
+
+def test_openbrowser_system_prompt_uses_yellow_confirmation_language() -> None:
+    message = _render_system_prompt()
+
+    assert "### Stage 2: YELLOW - Action Confirmation" in message
+    assert (
+        "The YELLOW confirmation preview keeps the chosen `element_id` pending "
+        "for confirmation" in message
+    )
+    assert "ORANGE" not in message
+
+
+def test_openbrowser_system_prompt_requires_element_id_grounded_reasoning() -> None:
+    message = _render_system_prompt()
+
+    assert (
+        "In your reasoning, explicitly name the candidate `element_id` values "
+        "you are considering before you act" in message
+    )
+    assert (
+        'Do not reason only in vague spatial language like "the button on the '
+        'right" when a visible `element_id` exists' in message
+    )
+    assert (
+        'Good: "`A1H` is the likely Search button because it is in the '
+        "top-right toolbar" in message
+    )
+    assert (
+        "No matching `element_id` appears in the current `any` page 1 "
+        "observation" in message
+    )
+    assert (
+        'Bad: "I will click the top-right button" without naming the visible '
+        "`element_id`." in message
+    )
 
 
 def test_openbrowser_system_prompt_explains_why_any_is_first() -> None:
