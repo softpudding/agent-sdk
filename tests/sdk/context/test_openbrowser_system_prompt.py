@@ -178,6 +178,50 @@ def test_openbrowser_system_prompt_requires_element_id_grounded_reasoning() -> N
     )
 
 
+def test_openbrowser_system_prompt_encourages_detail_views_for_preview_items() -> None:
+    message = _render_system_prompt()
+
+    assert (
+        "Feeds, search results, grids, cards, and post previews are often "
+        "staging views rather than the best place to finish a task." in message
+    )
+    assert (
+        "Opening the card/post/detail view is encouraged when it gives you "
+        "clearer targets, fuller context, or more reliable controls." in message
+    )
+    assert (
+        "actions such as like, favorite, comment, follow, share, or open are "
+        "usually still available there with better context" in message
+    )
+    assert (
+        "This card only shows a preview, so opening the post detail is the "
+        "flexible move" in message
+    )
+
+
+def test_openbrowser_system_prompt_repositions_occluded_targets_with_scroll() -> None:
+    message = _render_system_prompt()
+
+    assert (
+        "If the intended control is visible but cramped, near a viewport edge, "
+        "or partially occluded by sticky UI, floating bars, badges, or "
+        "overlays, scroll to reposition it before acting." in message
+    )
+    assert (
+        "Scroll to improve geometry when the target is partly occluded, "
+        "squeezed against another element, or too close to a sticky "
+        "header/footer or viewport edge" in message
+    )
+    assert (
+        "Scroll is also for geometry, not just discovery: use it to move a "
+        "partly covered target into a cleaner, more clickable position" in message
+    )
+    assert (
+        "The target button is visible but crowded by neighboring UI, so I "
+        "should scroll a bit to reposition it before clicking." in message
+    )
+
+
 def test_openbrowser_system_prompt_explains_why_any_is_first() -> None:
     message = _render_system_prompt()
 
