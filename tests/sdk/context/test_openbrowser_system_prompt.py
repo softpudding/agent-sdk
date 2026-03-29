@@ -67,6 +67,11 @@ def test_openbrowser_system_prompt_prefers_visual_discovery_before_keywords() ->
 
     assert "Treat `any` as the default first pass for a new page state" in message
     assert (
+        "If the target or a likely candidate is already partly visible, clipped "
+        "by the viewport edge, or partly occluded, scroll to reposition it "
+        "before continuing highlight pagination." in message
+    )
+    assert (
         "If the target is not on highlight page 1 and the page state is unchanged, "
         "continue paginating" in message
     )
@@ -117,6 +122,19 @@ def test_openbrowser_system_prompt_guides_detail_views_and_scroll() -> None:
 
     assert 'Do not declare something "not found" too early.' in message
     assert (
+        "If the target or a likely candidate is already visible but poorly "
+        "positioned for interaction, prefer repositioning it over continuing "
+        "discovery." in message
+    )
+    assert (
+        "A partly visible target near the viewport edge should usually be "
+        "repositioned closer to the middle of the viewport before clicking." in message
+    )
+    assert (
+        "Treat a clipped or partly occluded target as a geometry problem first, "
+        "not a discovery problem." in message
+    )
+    assert (
         "Opening the card/post/detail view is encouraged when it gives you "
         "clearer targets, fuller context, or more reliable controls." in message
     )
@@ -140,6 +158,10 @@ def test_openbrowser_system_prompt_uses_large_model_guidance_by_default() -> Non
 
     assert "Use judgment, but keep these priorities:" in message
     assert "- current observation before new discovery" in message
+    assert (
+        "- geometry fixes before more discovery when the target is already "
+        "partly visible" in message
+    )
     assert "Use this browser SOP strictly:" not in message
 
 
@@ -147,10 +169,19 @@ def test_openbrowser_system_prompt_uses_explicit_small_model_sop() -> None:
     message = _render_system_prompt(small_model=True)
 
     assert "Use this browser SOP strictly:" in message
+    assert (
+        "If the target or a likely candidate is already partly visible, clipped "
+        "by the viewport edge, or crowded by sticky UI, scroll first to "
+        "reposition it closer to the middle of the viewport." in message
+    )
     assert "If page 1 misses the target and the page state is unchanged" in message
     assert (
         "Only after pagination is insufficient, choose one of these next moves:"
         in message
+    )
+    assert (
+        "Prefer geometry fixes before more discovery when the target is already "
+        "visible but poorly positioned." in message
     )
     assert (
         "use `keywords` only for exact visible text already on the current page"
