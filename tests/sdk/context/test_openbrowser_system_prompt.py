@@ -108,6 +108,10 @@ def test_openbrowser_system_prompt_requires_element_id_grounded_reasoning() -> N
         'Bad example:\n- "I will click the top-right button" without naming the '
         "visible `element_id`." in message
     )
+    assert (
+        "older screenshots may later be dropped from live context while the "
+        "reasoning text remains." in message
+    )
 
 
 def test_openbrowser_system_prompt_uses_yellow_confirmation_language() -> None:
