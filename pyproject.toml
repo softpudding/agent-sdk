@@ -12,6 +12,11 @@ constraint-dependencies = [
     "pillow>=12.1.1",  # CVE-2026-25990
     "orjson>=3.11.7",  # CVE-2025-67221
 ]
+override-dependencies = [
+    # LiteLLM's open-browser branch currently pins python-dotenv==1.0.1,
+    # which conflicts with fastmcp>=3.0.0.
+    "python-dotenv==1.1.1",
+]
 
 # Workspace sources for intra-repo dependencies
 [tool.uv.sources]
