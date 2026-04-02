@@ -1795,7 +1795,7 @@ wheels = [
 [[package]]
 name = "litellm"
 version = "1.83.0"
-source = { git = "https://github.com/softpudding/litellm.git?rev=c14777b498558e121cb125518d5412cb07e1b8ce#c14777b498558e121cb125518d5412cb07e1b8ce" }
+source = { git = "https://github.com/softpudding/litellm.git?rev=2eb7db59461e9117b1e3e0519616b39f1497c0f9#2eb7db59461e9117b1e3e0519616b39f1497c0f9" }
 dependencies = [
     { name = "aiohttp" },
     { name = "click" },
@@ -2415,7 +2415,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=3.0.0" },
     { name = "filelock", specifier = ">=3.20.1" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "litellm", git = "https://github.com/softpudding/litellm.git?rev=c14777b498558e121cb125518d5412cb07e1b8ce" },
+    { name = "litellm", git = "https://github.com/softpudding/litellm.git?rev=2eb7db59461e9117b1e3e0519616b39f1497c0f9" },
     { name = "lmnr", specifier = ">=0.7.24" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "python-frontmatter", specifier = ">=1.1.0" },

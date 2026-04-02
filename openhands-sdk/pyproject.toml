@@ -11,7 +11,7 @@ dependencies = [
     "fastmcp>=3.0.0",
     "filelock>=3.20.1",
     "httpx>=0.27.0",
-    "litellm @ git+https://github.com/softpudding/litellm.git@c14777b498558e121cb125518d5412cb07e1b8ce",
+    "litellm @ git+https://github.com/softpudding/litellm.git@2eb7db59461e9117b1e3e0519616b39f1497c0f9",
     "pydantic>=2.12.5",
     "python-frontmatter>=1.1.0",
     "python-json-logger>=3.3.0",
