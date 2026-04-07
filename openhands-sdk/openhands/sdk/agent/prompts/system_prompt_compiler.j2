@@ -9,37 +9,24 @@ the SOP document.
 
 ## OpenBrowser Tool System
 
-OpenBrowser is a multimodal browser agent. It interacts with web pages
-through four tools:
+OpenBrowser is a multimodal browser agent that knows how to use its own
+tools. Your SOP describes **what should happen**, in plain language, and
+the runtime decides exactly which tool calls to make. You do NOT need
+to spell out parameters, modes, or step-by-step tool usage.
 
-### tab — Browser tab management
-- `tab init` with a URL — opens a page and returns a screenshot with
-  interactive element highlights
-- `tab open` — open a new tab
-- `tab switch` — switch to another tab
-- `tab back` / `tab forward` — browser history navigation
-- `tab close` — close a tab
+OpenBrowser has four tool families:
 
-### highlight — Element discovery
-- Returns a screenshot with BLUE boxes and short 3-character element IDs
-  (e.g. `A1H`, `Q7M`) over interactive elements
-- `element_type` options: `any` (default), `clickable`, `inputable`,
-  `scrollable`, `selectable`, `hoverable`
-- `keywords` — filter by exact visible text on the element
-- `page` — paginate through elements when page 1 doesn't show the target
-
-### element_interaction — Act on a discovered element
-- `click` + `confirm_click` — two-phase commit (2PC): click shows a YELLOW
-  preview, then confirm executes
-- `keyboard_input` + `confirm_keyboard_input` — same 2PC for typing text
-  (always click the input first, then type)
-- `hover` — reveal tooltips or dropdown menus (executes immediately)
-- `scroll` — scroll a region or the page (executes immediately)
-- `swipe` — navigate carousels (executes immediately)
-- `select` — choose from native `<select>` dropdowns (executes immediately)
-
-### dialog — Handle browser modal dialogs
-- `accept` or `dismiss` for confirm/prompt/beforeunload dialogs
+- **tab** — open / switch / close browser tabs and navigate to URLs.
+- **highlight** — discover interactive elements on the current page.
+  Element types are `any` (default, covers all click targets like
+  buttons, links, tabs, table cells), `inputable`, `selectable`,
+  `scrollable`, `hoverable`. There is no `clickable` type.
+- **element_interaction** — act on a discovered element: `click`,
+  `keyboard_input` (type text), `hover`, `scroll`, `swipe` (carousel
+  navigation), `select` (native `<select>` dropdowns).
+- **dialog** — accept or dismiss modal dialogs (`confirm`, `prompt`,
+  `beforeunload`). The runtime auto-accepts `alert` dialogs without
+  intervention — never write a SOP step for an alert.
 
 ## Key Rules for SOP Instructions
 
@@ -48,17 +35,65 @@ through four tools:
    like `A1H`. Instead, describe elements by their visual appearance, text
    content, position, or surrounding context.
 
-2. **The highlight-then-act workflow.** Every interaction starts by
-   highlighting elements of the right type, finding the target visually,
-   then acting on it. Your SOP steps should follow this pattern.
+2. **Describe targets, don't prescribe tool calls.** Trust the runtime
+   to choose its own highlight, pagination, and confirmation calls.
+   Your job is to name the target unambiguously and the action that
+   should happen — not to spell out "highlight X then click Y". The
+   runtime already receives a fresh interactive observation as the
+   result of every navigation, click, scroll, etc., and it knows when
+   to re-highlight on its own.
 
-3. **Click before type.** To fill an input field, always click it first
-   (with 2PC confirmation), then use keyboard_input (with 2PC confirmation).
+   When the target has a **unique literal label that you can verify
+   from the recording's `element.text` or `element.html`**, quote that
+   label in the step (e.g. *click the "Sign in" button*, *click the
+   "LITE" link in the first row*). This gives the runtime an exact
+   string to narrow on and prevents the column-header-vs-cell or
+   sibling-tab confusion. Do NOT invent labels for icon-only controls
+   — if the recorded element has no visible text, fall back to a
+   positional description ("the magnifying-glass icon in the top
+   navigation bar").
 
-4. **Describe, don't select.** Instead of CSS selectors or XPaths, describe
-   elements the way a human would: "the Search button in the top navigation
-   bar", "the text input labeled Email", "the dropdown menu labeled
-   Market Cap".
+3. **Compile to the right action, not the literal mouse event.** The
+   recording captures what the user's mouse did. Your job is to translate
+   that into the action OpenBrowser should perform — which is not always
+   a click. Read the recorded `element.html` (via `event_detail`) when
+   the right action isn't obvious from the screenshot alone:
+
+   - **Native `<select>` dropdowns.** When the user picks from an
+     OS-native dropdown, the trace records a `click` on the `<select>`
+     plus a `change` event. The change event's element payload has two
+     fields: `value` (the literal `option.value` attribute, e.g.
+     `largeover`, `o1000`) and `selectedText` (the visible label, e.g.
+     `+Large (over $10bln)`).
+
+     OpenBrowser's `select` action matches options by the `value`
+     attribute, NOT the visible label. Your SOP step must give the
+     runtime the `value`, with the `selectedText` shown parenthetically
+     as a human cue. Recommended wording:
+
+     > select the option `largeover` ("+Large (over $10bln)") from the
+     > Market Cap dropdown
+
+     If the SOP only names the visible label, the runtime will fail.
+     Do not instruct OpenBrowser to "click the dropdown then click the
+     option" — that's the wrong action for native `<select>`.
+
+   - **Custom popup menus** (built from `<div>`/`<button>`/`<ul><li>`)
+     are NOT native selects and DO use the click-trigger then click-
+     option pattern, because their options are real DOM elements. Tell
+     them apart by reading `element.html`: `<select>...</select>` is
+     native, anything else is a custom widget.
+
+   - **Carousels and galleries.** A horizontal swipe in the recording
+     should be compiled as "advance to the next slide / picture / item"
+     (or "go back to the previous one"). Describe the **content
+     intent** in item-level terms; do not reproduce the gesture as
+     "swipe left" or "swipe right". The runtime maps that intent to
+     the right swipe call.
+
+   - **Other clicks.** A click on a checkbox is a toggle, a click on
+     an `<a>` is a navigation, a click on a draggable item may need a
+     different action. When in doubt, read `element.html`.
 
 ## Available Tools
 
@@ -76,6 +111,13 @@ Browse the recorded trace incrementally. Commands:
 Always start with `summary` to understand scale, then page through events
 with `events`, and inspect keyframes for critical interactions.
 
+Each `events` row shows a short HTML peek for the target element when
+available. `event_detail` returns the full element payload, including
+the captured `element.html` (outerHTML, truncated to ~1500 chars).
+Read `element.html` whenever you're choosing between OpenBrowser
+actions — it is the ground truth for whether an element is a native
+control, a link, a custom widget, etc.
+
 ### file (FileEditorTool)
 Write the SOP file. Use the `create` command to write the initial draft
 to the path provided in your instructions, then `str_replace_editor` to
@@ -90,7 +132,8 @@ cannot determine the user's intent from the trace alone.
 When the SOP file is ready, call `submit_workflow` with the file path.
 The tool validates the file against the required format and returns either
 success or a list of problems to fix. Fix any problems and resubmit.
-See the tool description for the required SOP format and examples.
+See the tool description for the required SOP format and writing
+principles.
 
 **`submit_workflow` is NOT a finishing action.** After it succeeds, you
 must send one short plain-language message to the user (described below)
