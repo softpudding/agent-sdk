@@ -173,13 +173,141 @@ def test_openbrowser_system_prompt_uses_large_model_guidance_by_default() -> Non
         "- geometry fixes before more discovery when the target is already "
         "partly visible" in message
     )
-    assert "Use this browser SOP strictly:" not in message
+    assert "Follow these browser rules strictly:" not in message
 
 
-def test_openbrowser_system_prompt_uses_explicit_small_model_sop() -> None:
+def test_openbrowser_system_prompt_omits_routine_replay_block_by_default() -> None:
+    """Outside routine-replay mode the block must be absent for both model
+    sizes, so free-form conversations never see the keyword-unlock rules.
+    """
+    for kwargs in ({}, {"small_model": True}):
+        message = _render_system_prompt(**kwargs)
+        assert "<ROUTINE_REPLAY>" not in message
+        assert "Keywords:" not in message
+
+
+def test_openbrowser_system_prompt_routine_replay_block_is_present_when_enabled() -> (
+    None
+):
+    """When routine_replay_mode is True, the block renders with fixed rules
+    for using a Routine step's `**Keywords:**` token. The block must not
+    depend on the model judging anything about message content.
+    """
+    for kwargs in ({}, {"small_model": True}):
+        message = _render_system_prompt(routine_replay_mode=True, **kwargs)
+
+        assert "<ROUTINE_REPLAY>" in message
+        assert "This conversation is a routine replay." in message
+        # The "trust the Routine" framing must lead the block. The Routine
+        # is a recorded successful execution; following it literally is
+        # more reliable than re-deriving targets visually at runtime.
+        assert "Trust the Routine." in message
+        assert (
+            "It is a recorded successful execution that the compiler agent "
+            "already analyzed against the original trace" in message
+        )
+        assert (
+            "Whenever the Routine and your own reasoning about the current "
+            "observation disagree about how to proceed, the Routine wins." in message
+        )
+        # The step-level Keywords hint with its fixed rules.
+        assert "**Keywords:** <token>" in message
+        # The trigger is step entry, not "first highlight call". Anchoring
+        # on highlight let the model rationalize away the rule whenever it
+        # decided not to call highlight for a step at all (session
+        # 077abd52: clicked W5N from carry-over inventory and never reached
+        # the rule).
+        assert (
+            "your VERY FIRST tool call for that step MUST be `highlight` "
+            "with that token passed verbatim as the `keywords` argument" in message
+        )
+        # The override must name BOTH the large-model and small-model
+        # rules that compete with "trust the routine". Naming only WORKFLOW
+        # left an open back door for the small-model "if the current
+        # observation already contains a clean matching `element_id`, use
+        # it" rule, which is the small-model twin of the same trap.
+        assert (
+            'The general "act on the current observation instead of '
+            'reflexively calling `highlight`" guidance from `<WORKFLOW>`' in message
+        )
+        assert (
+            '"current observation before new discovery" priority from '
+            "`<LARGE_MODEL_GUIDANCE>`" in message
+        )
+        assert (
+            '"if the current observation already contains a clean matching '
+            '`element_id`, use it" rule from `<SMALL_MODEL_GUIDANCE>`' in message
+        )
+        assert (
+            "are ALL superseded on entry to a step that has a "
+            "`**Keywords:**` line" in message
+        )
+        assert "The Routine token outranks the carry-over inventory." in message
+        # The token is the primary anchor — not the visible label, not the
+        # step title. Session 077abd52 also showed the model substituting
+        # `["P/E"]` for `["fs_fa_pe"]` on a forced retry.
+        assert (
+            "Do not substitute the visible label, the step title, or any "
+            "other paraphrase as the `keywords` argument" in message
+        )
+        assert "Use the `Keywords:` token ONLY on the step it belongs to." in message
+        assert "If the step has no `**Keywords:**` line, do not invent one" in message
+        # Fallback behavior on zero matches.
+        assert (
+            "If a highlight call with the `Keywords:` token returns zero matches"
+            in message
+        )
+        assert "call `please_help_me` rather than guessing" in message
+        # The OLD self-contradicting carve-out paragraph (which stated the
+        # visible-text rule and then negated it) must not be re-introduced.
+        # Replay mode states one consistent rule by gating
+        # DISCOVERY_STRATEGY at the source.
+        assert "The general rule that `keywords` must be text visible" not in message
+        # The no-guessing rule must still be enforced everywhere else.
+        assert (
+            "Never probe the page with guessed words like `next`, `previous`, "
+            "`close`, `search`, `settings`, `gear`, or `bell`." in message
+        )
+
+
+def test_openbrowser_system_prompt_replay_keywords_rule_includes_token() -> None:
+    """In routine_replay_mode the DISCOVERY_STRATEGY keyword rule must be the
+    inclusive form that lists both verifiable sources (visible text and the
+    Routine step's `**Keywords:**` token), instead of the strict visible-only
+    form that the non-replay rendering uses."""
+    message = _render_system_prompt(routine_replay_mode=True)
+
+    assert (
+        "Use `keywords` only with text you can verify verbatim: either the "
+        "active routine step's `**Keywords:** <token>` value, or exact "
+        "literal characters already visible on the current page." in message
+    )
+    # The strict non-replay phrasing must NOT appear — it would re-introduce
+    # the contradiction the carve-out paragraph used to bridge.
+    assert (
+        "Use `keywords` only when you can already see exact literal text "
+        "characters on the current page" not in message
+    )
+
+
+def test_openbrowser_system_prompt_non_replay_keywords_rule_stays_strict() -> None:
+    """Outside replay mode the DISCOVERY_STRATEGY keyword rule must remain
+    the strict visible-text-only form."""
+    message = _render_system_prompt()
+
+    assert (
+        "Use `keywords` only when you can already see exact literal text "
+        "characters on the current page" in message
+    )
+    # The replay-mode inclusive form must NOT leak into non-replay rendering.
+    assert "active routine step's `**Keywords:** <token>` value" not in message
+
+
+def test_openbrowser_system_prompt_uses_explicit_small_model_guidance() -> None:
     message = _render_system_prompt(small_model=True)
 
-    assert "Use this browser SOP strictly:" in message
+    assert "Follow these browser rules strictly:" in message
+    assert "<SMALL_MODEL_GUIDANCE>" in message
     assert (
         "If the target or a likely candidate is already partly visible, clipped "
         "by the viewport edge, or crowded by sticky UI, scroll first to "
