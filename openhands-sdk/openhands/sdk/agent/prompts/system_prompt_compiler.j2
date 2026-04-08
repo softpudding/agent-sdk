@@ -26,6 +26,7 @@ For each step you write, look at the target element's `element.html` and pick th
 4. A clean `name` attribute on a form control (e.g. `name="email"`, `name="market_cap"`).
 5. A single distinctive word from a short literal `aria-label`.
 6. A single non-hashed semantic class token.
+7. A single distinctive word from the element's own visible text content, used as a last resort when items 1-6 don't yield a candidate. The runtime's keyword matcher searches each candidate element's visible text along with its attributes and classes, so a unique word from a permanent label works the same way an attribute token does. Same rejection rules — skip generic single words like `ok`, `more`, `next`, `submit`.
 
 **Reject** a candidate only if it clearly looks build-tool generated or worthless: starts with `css-`, `sc-`, `jsx-`, `ember-`, `react-aria-`, `MuiButton-`, `MuiIconButton-`, or any `Mui…-` prefix; ends in a random-looking hash suffix (`-aZ91`, `_x4j8b27`); is mostly random consonants and digits; or is a generic word like `btn`, `submit`, `input`, `link`, `container`, `wrapper` that would match dozens of elements. **Length is not a rejection criterion** — `fs_sh_insiderown` is fine even though it's long, and `id` or `q` is fine even though it's short, as long as it's distinctive on the page.
 
