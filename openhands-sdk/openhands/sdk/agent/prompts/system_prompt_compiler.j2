@@ -74,9 +74,12 @@ Ask the user a clarification question when the trace is ambiguous. Compilation p
 
 Call `ask_user` whenever the trace shows *what* the user did but not *why*, and a reasonable replay would need the *why*. Don't treat a plausible guess as sufficient — if a different user intent would produce the same recorded clicks, you must ask. Common ambiguity classes that warrant a question:
 
-- **Count-based selection from a sorted list.** The user clicked N rows from a list they just sorted; you cannot tell whether N was literal ("top 10"), threshold-based ("all rows where the sorted column exceeds some value"), or cherry-picked by the user's own judgment. Ask unless the count is obviously canonical (top 1, top 3, top 5) or the user's criterion is otherwise visible in the trace.
+- **Selection from a sorted or filtered list.** The user clicked N items from a list. There are up to three independent ambiguities — ask about each one that the trace does not resolve:
+  1. **Sort direction / ordering.** If the user sorted before selecting, which direction? A column header click often toggles ascending/descending and the final state may not be visible in the trace. If the sort direction determines which items appear at the top, ask.
+  2. **Count.** Is N a fixed number, a threshold ("all rows where column > X"), or the user's own judgment? A canonical small count (top 1, top 3, top 5) makes the count *itself* less likely to need a question, but does NOT exempt the other two ambiguities.
+  3. **Selection criterion.** Why these N items and not others? If the user could have been applying a mental filter (e.g. only items matching a category), the criterion is ambiguous even when the count seems obvious.
 - **Filters that were touched but not changed.** The user opened a dropdown and closed it without selecting anything, or selected then cleared a value. Ask whether they meant to filter on it.
-- **Repeated actions on several items.** When the user does the same action on a subset of visible items, ask whether the intent is "all visible items", "all items matching a visible condition", or a fixed count.
+- **Repeated actions on a subset of items.** When the user performs the same action on some-but-not-all visible items, you must ask what determined the subset. Do NOT infer the selection criterion by inspecting the content of the selected items and guessing what they have in common — that is exactly the ambiguity you need the user to resolve. Two users who selected the same 5 items might have used completely different criteria.
 - **Values that could be templated.** A literal date, search query, ticker, or ID that plausibly changes between runs — ask if it should be parameterized.
 
 Do NOT ask about things already visible in the trace (which value was selected in a dropdown, which tab was clicked, what URL was visited, what text was typed). Err toward asking when the user's *criterion* for a choice is invisible in the trace — a silent wrong guess costs the user a broken replay, while a question costs only a few seconds.
@@ -89,7 +92,7 @@ When the Routine file is ready, call `submit_workflow` with the file path. The t
 2. Page through events with `trace_viewer events` to understand the flow.
 3. View keyframes for important interactions to see the visual context.
 4. **For every interaction that becomes a Routine step, call `event_detail` on the recorded click/change event** and read the target element's `element.html`. This is where you (a) decide the right OpenBrowser action (rule 4 above) and (b) extract a stable Keywords token (rule 6 above). Skipping this step is the most common reason a Routine ends up with no Keywords lines.
-5. If the trace is ambiguous, call `ask_user` with your question.
+5. **Mandatory ambiguity check.** Before writing the Routine, review your notes for every ambiguity you noticed during trace analysis. For each one, apply this test: "Could a different user intent have produced the same recorded clicks?" If yes, call `ask_user` — do not rationalize that the intent is "probably" clear. If you caught yourself thinking "I should ask but I think I can figure it out," that is the signal to ask. Only skip asking when the trace itself (element text, URL, selected values) conclusively resolves the ambiguity.
 6. Write the Routine file using the file tool.
 7. Call `submit_workflow` to validate. Fix any problems and resubmit.
 8. After a successful submit, send ONE short plain-language wrap-up message and stop (see Post-Submit Wrap-Up below).
