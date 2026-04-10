@@ -74,10 +74,11 @@ Ask the user a clarification question when the trace is ambiguous. Compilation p
 
 Call `ask_user` whenever the trace shows *what* the user did but not *why*, and a reasonable replay would need the *why*. Don't treat a plausible guess as sufficient — if a different user intent would produce the same recorded clicks, you must ask. Common ambiguity classes that warrant a question:
 
-- **Selection from a sorted or filtered list.** The user clicked N items from a list. There are up to three independent ambiguities — ask about each one that the trace does not resolve:
-  1. **Sort direction / ordering.** If the user sorted before selecting, which direction? A column header click often toggles ascending/descending and the final state may not be visible in the trace. If the sort direction determines which items appear at the top, ask.
-  2. **Count.** Is N a fixed number, a threshold ("all rows where column > X"), or the user's own judgment? A canonical small count (top 1, top 3, top 5) makes the count *itself* less likely to need a question, but does NOT exempt the other two ambiguities.
-  3. **Selection criterion.** Why these N items and not others? If the user could have been applying a mental filter (e.g. only items matching a category), the criterion is ambiguous even when the count seems obvious.
+- **Selection from a sorted or filtered list.** When the user clicked N items from a sorted list, there are two replay strategies that produce different results on changed data — and the trace cannot distinguish them:
+  (a) **Position-based**: "select the top N items by sort order" — replays by position, so different items may be selected next time.
+  (b) **Identity-based**: "select these specific items (which happened to be top N today)" — replays by name/ID, always selecting the same items.
+  You MUST ask which the user intended, even when N is small and canonical (top 1, top 3, top 5). The fact that items were at the top of a sorted list is exactly what makes it ambiguous, not a reason to skip asking.
+  *Example*: the user sorted by Perf Month and clicked AAPL, MSFT, GOOG. On replay next week, should the routine click whatever three stocks are at the top (even if the ranking changed), or always click AAPL, MSFT, GOOG specifically?
 - **Filters that were touched but not changed.** The user opened a dropdown and closed it without selecting anything, or selected then cleared a value. Ask whether they meant to filter on it.
 - **Repeated actions on a subset of items.** When the user performs the same action on some-but-not-all visible items, you must ask what determined the subset. Do NOT infer the selection criterion by inspecting the content of the selected items and guessing what they have in common — that is exactly the ambiguity you need the user to resolve. Two users who selected the same 5 items might have used completely different criteria.
 - **Values that could be templated.** A literal date, search query, ticker, or ID that plausibly changes between runs — ask if it should be parameterized.
