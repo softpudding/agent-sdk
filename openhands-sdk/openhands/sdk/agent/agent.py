@@ -552,6 +552,33 @@ class Agent(CriticMixin, AgentBase):
         if tool is None:
             available = list(self.tools_map.keys())
             err = f"Tool '{tool_name}' not found. Available: {available}"
+            # Common hallucinations: model calls a browser sub-action as a
+            # top-level tool. Steer it back to element_interaction.
+            element_interaction_actions = {
+                "click",
+                "hover",
+                "scroll",
+                "swipe",
+                "keyboard_input",
+                "select",
+                "drag_and_drop",
+                "set_slider",
+                "confirm_click",
+                "confirm_keyboard_input",
+                "confirm_select",
+                "confirm_drag_and_drop",
+            }
+            if (
+                tool_name in element_interaction_actions
+                and "element_interaction" in self.tools_map
+            ):
+                err += (
+                    f" — '{tool_name}' is an action of the "
+                    f"`element_interaction` tool, not a tool of its own. "
+                    f'Call `element_interaction` with `action: "{tool_name}"` '
+                    f"(plus an `element_id` if this action targets a specific "
+                    f"element)."
+                )
             logger.error(err)
             # Persist assistant function_call so next turn has matching call_id
             tc_event = ActionEvent(
