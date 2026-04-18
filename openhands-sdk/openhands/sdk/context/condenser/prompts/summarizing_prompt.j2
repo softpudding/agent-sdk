@@ -1,21 +1,21 @@
-You are maintaining a context-aware state summary for an interactive browser agent.
-You will be given a list of events — screenshots, highlight observations, element actions, tool calls, and any previous summaries — taken by the agent while executing a task.
+You are maintaining a context-aware state summary for an interactive agent.
+You will be given a list of events corresponding to actions taken by the agent, including any previous summaries.
 
-Most of these tasks are Browser Routine replays: the user sent a Markdown SOP with numbered `## Step N:` sections, and the agent is working through them one at a time. Your job is to preserve exactly the state a competent teammate would need to pick up mid-task: which steps are done, which are not, what page the browser is currently on, and any unresolved blockers.
+Your job is to preserve exactly what a teammate would need to pick up the task mid-stream: the goal, what has been done toward it, what remains, the current working state, and any unresolved blockers.
 
 If the events contain ANY `task_tracker` activity, you MUST reflect the current task list (IDs and statuses) in your summary. When referencing tasks, preserve exact task IDs and statuses.
 
-Lead with these fields (in this order):
+Track:
 
-USER_GOAL: (One concise line — what the user asked for. For routine replay, restate the Routine goal verbatim, including the routine name if it was in the original message.)
+USER_GOAL: (The user's goal and any clarifications, in concise form. If the user's instructions contain numbered steps or headings, preserve the exact numbering and headings.)
 
-STEPS_COMPLETED: (Numbered list of SOP steps finished, each with a one-line evidence note: which filter was applied, which button was clicked, which value was selected, etc. Preserve exact dropdown values, option codes, and keywords mentioned in the Routine.)
+COMPLETED: (What has been done so far, in order, with concrete evidence — which element was clicked, which value was selected, which file was edited, which test passed, etc. Preserve exact identifiers: URLs, element labels, dropdown values, file paths, function names, task IDs.)
 
-STEPS_REMAINING: (Numbered list of SOP steps not yet done, in order. Copy the step headings from the Routine verbatim; do not paraphrase.)
+PENDING: (What still needs to be done, in order. When the user's instructions contain step headings, copy the remaining headings verbatim instead of paraphrasing.)
 
-CURRENT_PAGE_STATE: (URL, active tab ID, which filters or form fields are already set, any modal or dialog currently visible, and anything else a replay would need to know to continue from here.)
+CURRENT_STATE: (The state a replay needs to continue from here. For browser work: URL, active tab ID, which filters or form fields are already set, any modal or dialog currently visible. For non-browser work: current working directory, files or functions being edited, most recent command output.)
 
-OPEN_QUESTIONS: (Anything the agent was blocked on — `please_help_me` calls waiting on the user, ambiguous element matches, keyword highlights that returned zero results, etc. Empty if none.)
+OPEN_QUESTIONS: (Anything the agent was blocked on — `please_help_me` calls waiting on user input, ambiguous element matches, retries that failed, keyword highlights that returned zero results. Empty if none.)
 
 TASK_TRACKING: (If the agent used `task_tracker`, list active tasks with their IDs and statuses. PRESERVE TASK IDs.)
 
@@ -27,41 +27,42 @@ DEPS: {Dependencies, imports, external calls}
 VERSION_CONTROL_STATUS: {Repository state, current branch, PR status, commit history}
 
 PRIORITIZE:
-1. Preserve the SOP ↔ progress mapping. A replay that cannot tell which step is next is useless.
-2. Preserve exact identifiers from the Routine: step numbers, keyword tokens, dropdown option codes, visible labels.
-3. Keep the current page state concrete (URL, tab id, visible page region, what is selected).
-4. Distinguish confidently completed steps from partial or retried ones.
-5. Keep every section concise.
+1. Preserve the goal ↔ progress mapping. A summary that cannot tell which action is next is useless.
+2. Preserve exact identifiers: step numbers, element labels, dropdown values, URLs, tab IDs, file paths, function names, task IDs.
+3. Keep the current state concrete (URL, tab id, working directory, what is open or selected).
+4. Distinguish confidently completed work from partial or retried work.
+5. Keep every section concise and relevant.
 
-SKIP: irrelevant details for the current task type; screenshot descriptions beyond what's needed for STEPS_COMPLETED or CURRENT_PAGE_STATE.
+SKIP: irrelevant details for the current task type; screenshot descriptions beyond what is needed for COMPLETED or CURRENT_STATE.
 
 Example formats:
 
-For browser routine replay:
-USER_GOAL: Run the saved routine "value-stocks-monthly-drop" — find high-value stocks with significant monthly price drops on Finviz.
-STEPS_COMPLETED:
-  1. Set Market Cap = Small (over $300mln) via `fs_cap` dropdown → option `smallover`.
-  2. Set P/B Under 2 via `fs_fa_pb` dropdown → option `u2`.
-  3. Set P/E Under 15 via `fs_fa_pe` dropdown → option `u15`.
-STEPS_REMAINING:
-  4. Set Dividend Growth filter to 1 Year Positive (**Keywords:** fs_fa_divgrowth).
-  5. Set Debt/Equity Under 1 (**Keywords:** fs_fa_debteq).
-  6. Switch to Performance view.
-  7. Sort by Perf Month ascending.
-  8. Report qualifying stocks in chat.
-CURRENT_PAGE_STATE: URL finviz.com/screener.ashx?v=111&f=cap_smallover,fe_pb_u2,fe_pe_u15 (tab 1737548650). Descriptive filter tab active; Fundamental tab not yet opened. No modal open.
+For a browser task:
+USER_GOAL: Apply a set of filters on the screener site and report rows that meet the criteria in chat.
+COMPLETED:
+  1. Selected the first filter from its dropdown.
+  2. Selected the second filter from its dropdown.
+  3. Selected the third filter from its dropdown.
+PENDING:
+  4. Set the remaining filters listed in the user's instructions.
+  5. Switch to the required results view.
+  6. Sort by the target column.
+  7. Report qualifying rows.
+CURRENT_STATE: Tab 1, filter panel active, three dropdowns set. No modal open.
 OPEN_QUESTIONS: None.
-TASK_TRACKING: Task T1 (step 1) completed, T2 (step 2) completed, T3 (step 3) completed, T4 (step 4) in_progress.
+TASK_TRACKING: T1 completed, T2 completed, T3 completed, T4 in_progress.
 
-For code tasks:
-USER_GOAL: Fix FITS card float representation issue
-STEPS_COMPLETED: Modified mod_float() in card.py, ran unit tests.
-STEPS_REMAINING: Create PR, update documentation.
-CODE_STATE: mod_float() in card.py updated
-TESTS: test_format() passed
-CHANGES: str(val) replaces f"{val:.16G}"
-DEPS: None modified
-VERSION_CONTROL_STATUS: Branch: fix-float-precision, Latest commit: a1b2c3d
+For a code task:
+USER_GOAL: Fix the float representation bug in card.py.
+COMPLETED: Modified mod_float() in card.py, ran unit tests.
+PENDING: Create PR, update documentation.
+CURRENT_STATE: Working in card.py, tests green locally.
+OPEN_QUESTIONS: None.
+CODE_STATE: mod_float() in card.py updated.
+TESTS: test_format() passed.
+CHANGES: str(val) replaces f"{val:.16G}".
+DEPS: None modified.
+VERSION_CONTROL_STATUS: Branch: fix-float-precision, Latest commit: a1b2c3d.
 
 {% for event in events %}
 <EVENT>
