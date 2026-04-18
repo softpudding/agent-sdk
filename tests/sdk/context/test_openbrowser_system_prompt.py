@@ -221,23 +221,26 @@ def test_openbrowser_system_prompt_routine_replay_block_is_present_when_enabled(
             "your VERY FIRST tool call for that step MUST be `highlight` "
             "with that token passed verbatim as the `keywords` argument" in message
         )
-        # The override must name BOTH the large-model and small-model
-        # rules that compete with "trust the routine". Naming only WORKFLOW
-        # left an open back door for the small-model "if the current
-        # observation already contains a clean matching `element_id`, use
-        # it" rule, which is the small-model twin of the same trap.
+        # The override must name BOTH the priority-list form and the
+        # numbered-protocol form of the "current observation first" rule
+        # that compete with "trust the routine". Naming only WORKFLOW
+        # left an open back door for the "if the current observation
+        # already contains a clean matching `element_id`, use it" rule.
+        # Model-tier tag names ("SMALL/LARGE_MODEL_GUIDANCE") must not
+        # appear in the rendered prompt — the model should not be told
+        # which tier it is.
         assert (
             'The general "act on the current observation instead of '
             'reflexively calling `highlight`" guidance from `<WORKFLOW>`' in message
         )
-        assert (
-            '"current observation before new discovery" priority from '
-            "`<LARGE_MODEL_GUIDANCE>`" in message
-        )
+        assert '"current observation before new discovery" priority' in message
         assert (
             '"if the current observation already contains a clean matching '
-            '`element_id`, use it" rule from `<SMALL_MODEL_GUIDANCE>`' in message
+            '`element_id`, use it" rule' in message
         )
+        assert "`<ACTION_PROTOCOL>`" in message
+        assert "SMALL_MODEL_GUIDANCE" not in message
+        assert "LARGE_MODEL_GUIDANCE" not in message
         assert (
             "are ALL superseded on entry to a step that has a "
             "`**Keywords:**` line" in message
@@ -348,10 +351,12 @@ def test_openbrowser_system_prompt_small_model_requires_confirm_reasoning() -> N
     """
     message = _render_system_prompt(small_model=True)
 
-    # The rule is scoped to small models — it must live inside the
-    # SMALL_MODEL_GUIDANCE block, not leak into the default large-model
-    # rendering.
-    assert "<SMALL_MODEL_GUIDANCE>" in message
+    # The rule is scoped to the strict-protocol rendering — it must live
+    # inside the <ACTION_PROTOCOL> block, not leak into the default
+    # priority-list rendering. Tag names must not expose model tier.
+    assert "<ACTION_PROTOCOL>" in message
+    assert "SMALL_MODEL_GUIDANCE" not in message
+    assert "LARGE_MODEL_GUIDANCE" not in message
 
     # Before emitting any confirm_* call, the model must state these
     # three things explicitly in its reasoning.
@@ -390,7 +395,10 @@ def test_openbrowser_system_prompt_uses_explicit_small_model_guidance() -> None:
     message = _render_system_prompt(small_model=True)
 
     assert "Follow these browser rules strictly:" in message
-    assert "<SMALL_MODEL_GUIDANCE>" in message
+    # Model-tier-named tags must not leak into the rendered prompt.
+    assert "<ACTION_PROTOCOL>" in message
+    assert "SMALL_MODEL_GUIDANCE" not in message
+    assert "LARGE_MODEL_GUIDANCE" not in message
     assert (
         "If the target or a likely candidate is already partly visible, clipped "
         "by the viewport edge, or crowded by sticky UI, scroll first to "

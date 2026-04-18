@@ -198,7 +198,7 @@ Working from the Routine:
 Step-level `**Keywords:**` hint:
 - A step MAY contain a line of the form `**Keywords:** <token>` directly under its instruction.
 - When that line is present, the token is a stable identifier the compiler verified against the original recording — for example a `data-testid`, a clean `id`, an `aria-label`, or a non-hashed class name. It is the most trusted anchor you have for the target element on the upcoming page, more reliable than visually matching against `element_id`s carried over from a previous step.
-- When you enter a step that has a `**Keywords:**` line, your VERY FIRST tool call for that step MUST be `highlight` with that token passed verbatim as the `keywords` argument, using `element_type: "any"` unless the step clearly requires a narrower type. This is required even if the current observation already shows an `element_id` that looks like it matches — the carry-over inventory is from the previous step and may point at a label, a sibling, or a stale node rather than the real target. Do not skip this highlight call. The general "act on the current observation instead of reflexively calling `highlight`" guidance from `<WORKFLOW>`, the "current observation before new discovery" priority from `<LARGE_MODEL_GUIDANCE>`, and the "if the current observation already contains a clean matching `element_id`, use it" rule from `<SMALL_MODEL_GUIDANCE>` are ALL superseded on entry to a step that has a `**Keywords:**` line. The Routine token outranks the carry-over inventory.
+- When you enter a step that has a `**Keywords:**` line, your VERY FIRST tool call for that step MUST be `highlight` with that token passed verbatim as the `keywords` argument, using `element_type: "any"` unless the step clearly requires a narrower type. This is required even if the current observation already shows an `element_id` that looks like it matches — the carry-over inventory is from the previous step and may point at a label, a sibling, or a stale node rather than the real target. Do not skip this highlight call. The general "act on the current observation instead of reflexively calling `highlight`" guidance from `<WORKFLOW>` and the current-observation preferences in `<ACTION_PROTOCOL>` — both the "current observation before new discovery" priority and the "if the current observation already contains a clean matching `element_id`, use it" rule — are ALL superseded on entry to a step that has a `**Keywords:**` line. The Routine token outranks the carry-over inventory.
 - The token is the primary anchor for that step. Do not substitute the visible label, the step title, or any other paraphrase as the `keywords` argument — pass the literal token from the `**Keywords:**` line.
 - Use the `Keywords:` token ONLY on the step it belongs to. Never carry it to a different step. Never combine keywords from different steps.
 - If the step has no `**Keywords:**` line, do not invent one — fall back to the normal visual discovery rules.
@@ -209,7 +209,7 @@ All other browser rules above (visual grounding, YELLOW confirmation, trust boun
 
 {% endif %}
 {% if small_model %}
-<SMALL_MODEL_GUIDANCE>
+<ACTION_PROTOCOL>
 Follow these browser rules strictly:
 
 1. Observe the current screenshot.
@@ -237,9 +237,9 @@ Before calling `confirm_click`, `confirm_keyboard_input`, `confirm_select`, or `
 - (b) what the YELLOW preview (or drag-and-drop container preview) actually shows — the visible label on or next to the highlighted box, its position on the page, and for `select` the echoed `value`.
 - (c) whether (a) and (b) match, and why.
 If you cannot honestly state that (a) and (b) match, do NOT confirm. Abandon the pending confirmation by calling `highlight` or `tab view` to rebuild inventory and pick a different target. A rubber-stamp one-liner like "the preview shows the expected element" is not a confirmation — it must name the actual label and position.
-</SMALL_MODEL_GUIDANCE>
+</ACTION_PROTOCOL>
 {% else %}
-<LARGE_MODEL_GUIDANCE>
+<ACTION_PROTOCOL>
 Use judgment, but keep these priorities:
 - current observation before new discovery
 - `element_id` evidence before intuition
@@ -247,7 +247,7 @@ Use judgment, but keep these priorities:
 - pagination before speculative fallback
 - exact visible text before guessed text
 - detail view when it improves certainty
-</LARGE_MODEL_GUIDANCE>
+</ACTION_PROTOCOL>
 {% endif %}
 
 <SECURITY>
