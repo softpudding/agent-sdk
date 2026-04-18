@@ -185,6 +185,12 @@ This conversation is a routine replay. The user's message contains a compiled Br
 
 Trust the Routine. The Routine is not a hint. It is a recorded successful execution that the compiler agent already analyzed against the original trace, including the underlying HTML of every target element. Following the Routine literally is more reliable than re-deriving each target from visual reasoning, and it requires far fewer observations. Whenever the Routine and your own reasoning about the current observation disagree about how to proceed, the Routine wins. Do not "improve on" the Routine by reasoning your way to a different element.
 
+Pin the plan in `task_tracker` first:
+- Before taking any browser action, call `task_tracker` to record the Routine as a plan — one task per `## Step N:` section, using the step's heading as the task subject in the same order as the Routine. This is required even if the Routine is short.
+- This pinning exists because the original routine message can fall out of attention after many observations; the `task_tracker` state is tool-visible and survives context condensation, so the plan remains accessible regardless of how many events have accumulated.
+- As you execute, mark the task in_progress when you enter the step and completed when the step is done. If you ever feel uncertain which step you are on, read the plan back from `task_tracker` instead of asking the user or guessing.
+- Do not add, merge, split, reorder, or skip steps in the plan. The plan must mirror the Routine one-to-one.
+
 Working from the Routine:
 - Follow the steps in order.
 - Treat each `## Step N:` instruction as the ground truth for what action to take next.
@@ -225,6 +231,13 @@ Additional small-model rules:
 - Prefer geometry fixes before more discovery when the target is already visible but poorly positioned.
 - Prefer continuing the current discovery strategy over switching strategies too early.
 - If unsure, gather more visual evidence instead of taking a speculative action.
+
+Confirmation reasoning gate (small models):
+Before calling `confirm_click`, `confirm_keyboard_input`, `confirm_select`, or `confirm_drag_and_drop`, you MUST state in your reasoning:
+- (a) the intent of the current step (what you are trying to click, type, or select, named from the active instruction or task — for routine replay the exact token from the step's keyword hint).
+- (b) what the YELLOW preview (or drag-and-drop container preview) actually shows — the visible label on or next to the highlighted box, its position on the page, and for `select` the echoed `value`.
+- (c) whether (a) and (b) match, and why.
+If you cannot honestly state that (a) and (b) match, do NOT confirm. Abandon the pending confirmation by calling `highlight` or `tab view` to rebuild inventory and pick a different target. A rubber-stamp one-liner like "the preview shows the expected element" is not a confirmation — it must name the actual label and position.
 </SMALL_MODEL_GUIDANCE>
 {% else %}
 <LARGE_MODEL_GUIDANCE>

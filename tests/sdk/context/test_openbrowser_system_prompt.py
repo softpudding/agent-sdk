@@ -270,6 +270,38 @@ def test_openbrowser_system_prompt_routine_replay_block_is_present_when_enabled(
         )
 
 
+def test_openbrowser_system_prompt_routine_replay_requires_task_tracker_plan() -> None:
+    """On entry to routine_replay mode the agent must first record the SOP
+    as a task_tracker plan (one task per Step) before executing any browser
+    action.
+
+    Rationale: session d1395b5d (qwen3.5-flash) lost the user's original
+    routine message to long-context attention decay after ~95 events and
+    asked the user what the routine was. Pinning the SOP into the
+    task_tracker makes the plan a first-class tool-visible object that
+    survives LLM condensation and does not depend on the original
+    user-message tokens remaining in the attention window.
+    """
+    for kwargs in ({}, {"small_model": True}):
+        message = _render_system_prompt(routine_replay_mode=True, **kwargs)
+
+        # Must instruct an explicit task_tracker plan as the very first
+        # action, before any browser tool call.
+        assert "Before taking any browser action, call `task_tracker`" in message
+        # Plan must mirror the SOP one-to-one — not a condensed or
+        # re-interpreted version — so the agent cannot silently drop or
+        # merge steps.
+        assert "one task per `## Step N:` section" in message
+        # Agent must mark each task in_progress when entering the step and
+        # completed when leaving it, so the live plan is a ground-truth
+        # cursor into the SOP even after the original user message has
+        # been summarized or fallen out of attention.
+        assert (
+            "mark the task in_progress when you enter the step and completed "
+            "when the step is done" in message
+        )
+
+
 def test_openbrowser_system_prompt_replay_keywords_rule_includes_token() -> None:
     """In routine_replay_mode the DISCOVERY_STRATEGY keyword rule must be the
     inclusive form that lists both verifiable sources (visible text and the
@@ -301,6 +333,57 @@ def test_openbrowser_system_prompt_non_replay_keywords_rule_stays_strict() -> No
     )
     # The replay-mode inclusive form must NOT leak into non-replay rendering.
     assert "active routine step's `**Keywords:** <token>` value" not in message
+
+
+def test_openbrowser_system_prompt_small_model_requires_confirm_reasoning() -> None:
+    """Small-model guidance must force an explicit intent-vs-preview check
+    before any `confirm_*` tool call.
+
+    Rationale: session d1395b5d (qwen3.5-flash) rubber-stamped several
+    confirm_click / confirm_select calls with one-liner reasoning that
+    never compared the YELLOW preview against the step's intent. The
+    confirmation gate is only useful if the model is forced to verbalize
+    the comparison; otherwise it is a second LLM call that almost always
+    agrees with the first.
+    """
+    message = _render_system_prompt(small_model=True)
+
+    # The rule is scoped to small models — it must live inside the
+    # SMALL_MODEL_GUIDANCE block, not leak into the default large-model
+    # rendering.
+    assert "<SMALL_MODEL_GUIDANCE>" in message
+
+    # Before emitting any confirm_* call, the model must state these
+    # three things explicitly in its reasoning.
+    assert (
+        "Before calling `confirm_click`, `confirm_keyboard_input`, "
+        "`confirm_select`, or `confirm_drag_and_drop`, you MUST state in "
+        "your reasoning:" in message
+    )
+    assert (
+        "(a) the intent of the current step (what you are trying to click, "
+        "type, or select, named from the active instruction or task — for "
+        "routine replay the exact token from the step's keyword hint)" in message
+    )
+    assert (
+        "(b) what the YELLOW preview (or drag-and-drop container preview) "
+        "actually shows — the visible label on or next to the highlighted "
+        "box, its position on the page, and for `select` the echoed `value`" in message
+    )
+    assert "(c) whether (a) and (b) match, and why" in message
+    # If the reasoning cannot honestly state that they match, the model
+    # must abandon the pending confirmation rather than confirm anyway.
+    assert (
+        "If you cannot honestly state that (a) and (b) match, do NOT "
+        "confirm. Abandon the pending confirmation by calling `highlight` "
+        "or `tab view` to rebuild inventory and pick a different target." in message
+    )
+
+    # The large-model rendering must not carry this verbose gate.
+    large_message = _render_system_prompt()
+    assert (
+        "Before calling `confirm_click`, `confirm_keyboard_input`" not in large_message
+    )
 
 
 def test_openbrowser_system_prompt_uses_explicit_small_model_guidance() -> None:
