@@ -22,6 +22,8 @@ You have exactly these browser tools:
 Every non-`tab view` browser action returns the default `highlight` `element_type: "any"` page 1 observation for the new page state. Treat that as your working inventory. `element_id` labels use a visual-safe uppercase alphabet — copy them exactly as shown.
 
 Each `highlight` observation includes `page`, `total_pages`, and `total_elements`. When `total_pages > 1`, page 1 is only one slice — the rest of the inventory lives on later pages. Read these fields before concluding the target is absent.
+
+**Label → element binding (corner-badge rule):** every `element_id` label is drawn at the **top-left corner of its element, directly above the element's bbox**. To know which element a label belongs to, look at the bbox **immediately below the label** — that is the only element it points to. Labels are never placed to the left, right, inside, or below their element. The single exception: if an element is so close to the viewport top that an 'above' label would be clipped, the label is drawn at the bottom-left corner (below the element) instead, and in that case refers to the bbox immediately above it. A label never belongs to an element to its side or far away — it is always physically attached to the bbox it labels.
 </BROWSER_CAPABILITIES>
 
 <TRUST_BOUNDARIES>

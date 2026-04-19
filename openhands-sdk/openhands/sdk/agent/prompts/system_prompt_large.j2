@@ -31,6 +31,8 @@ The workflow is visual-first. Follow the loop: **OBSERVE → REASON → (DISCOVE
 - Do not invent controls, labels, or element IDs that are not visible in the current observation.
 - Use `tab view` only when you explicitly need the clean raw screenshot without overlays.
 - After any meaningful page-state change, rebuild the inventory from the new observation before the next action.
+
+**Label → element binding (corner-badge rule):** Every `element_id` label is a small rectangle drawn at the **top-left corner of its element's bbox, directly above the element**. To read which element a label refers to, look at the bbox **immediately below** the label — that's the only element it can point to. Labels are never placed to the left, right, inside, or below the element they label. The single exception: when an element is so close to the viewport top that an 'above' label would be clipped, the label is drawn at the bottom-left corner instead (below the element); in that case the label refers to the bbox immediately above it. A label never "belongs to" a distant element, a neighbor to the side, or the element beneath where you see the label's position on screen — it is always the bbox it is physically attached to.
 </VISUAL_GROUNDING>
 
 <TRUST_BOUNDARIES>

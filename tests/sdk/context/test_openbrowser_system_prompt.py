@@ -105,6 +105,37 @@ def test_both_renderings_guard_against_missing_overlay_inference() -> None:
         assert "label may just be on a later page" in message
 
 
+def test_both_renderings_teach_corner_badge_label_binding() -> None:
+    """The extension draws every `element_id` label at the top-left
+    corner of its element's bbox (above the element). Sideways
+    placements were removed because they produced labels visually
+    between two elements that read as belonging to the wrong one
+    (session 444122cb: `UHT` between Fundamental and Technical tabs).
+
+    The only permitted exception is elements near the viewport top,
+    where 'above' would clip — those use 'below'. The prompt must
+    teach this binding rule so the agent reads every label as pointing
+    to the bbox directly below it (or directly above, in the rare
+    viewport-top case), never to a neighbor.
+    """
+    for kwargs in ({}, {"small_model": True}):
+        message = _render_system_prompt(**kwargs)
+        # Name the rule and its canonical anchor.
+        assert "top-left corner" in message
+        # Binding semantics: look for the bbox immediately below the label.
+        assert "immediately below" in message, (
+            "must tell the agent to look at the bbox directly below the label"
+        )
+        # The viewport-top exception must be stated so the agent doesn't
+        # conclude "label below this element means the label is for
+        # something else".
+        assert "viewport top" in message
+        assert "bottom-left" in message or "below the element" in message
+        # Rule out sideways interpretation — labels are never left/right
+        # of the element they label.
+        assert "never placed to the left, right" in message
+
+
 def test_both_renderings_teach_total_pages_field() -> None:
     """Session 444122cb: agent made 10 `highlight` calls with `page=1`
     even after observations reported `total_pages=5` or `6`. The prompt
