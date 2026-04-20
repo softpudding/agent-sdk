@@ -102,6 +102,15 @@ def test_extended_thinking_support(model, expected_extended_thinking):
         ("gpt-4o", False),  # OpenAI doesn't support explicit prompt caching
         ("gemini-1.5-pro", False),
         ("unknown-model", False),
+        # DashScope qwen 3.5 / 3.6 families (explicit cache via cache_control)
+        ("dashscope/qwen3.5-flash", True),
+        ("dashscope/qwen3.6-flash", True),
+        ("dashscope/qwen3.5-plus", True),
+        ("dashscope/qwen3.6-plus", True),
+        ("dashscope/qwen3.6-flash-2026-04-16", True),
+        # Older qwen families are not on the explicit-cache list
+        ("dashscope/qwen-turbo", False),
+        ("dashscope/qwen-max", False),
     ],
 )
 def test_prompt_cache_support(model, expected_cache):

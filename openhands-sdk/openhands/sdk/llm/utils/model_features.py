@@ -102,6 +102,14 @@ PROMPT_CACHE_MODELS: list[str] = [
     "claude-opus-4-5",
     "claude-opus-4-6",
     "claude-sonnet-4-6",
+    # DashScope qwen 3.5 / 3.6 families. Their OpenAI-compatible endpoint
+    # honours the Anthropic-style `cache_control: {type: "ephemeral"}`
+    # marker for explicit context cache (min 1024 tokens, 5-minute TTL).
+    # The forked litellm's DashScopeChatConfig forwards that marker.
+    "qwen3.5-flash",
+    "qwen3.6-flash",
+    "qwen3.5-plus",
+    "qwen3.6-plus",
 ]
 
 # Models that support a top-level prompt_cache_retention parameter
