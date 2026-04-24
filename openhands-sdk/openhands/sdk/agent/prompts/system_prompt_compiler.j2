@@ -73,9 +73,9 @@ Browse the recorded trace incrementally. Always start with `summary` to understa
 | command           | parameters              | what it returns                                |
 |-------------------|-------------------------|------------------------------------------------|
 | `summary`         | (none)                  | Total events, event-type counts, pages visited |
-| `events`          | `start`, `count`        | Condensed list of events in that range. Rows marked `[has keyframe]` and/or `[has after]` have screenshots that will be attached when you call `event_detail` on that index. |
+| `events`          | `start`, `count`        | Condensed list of events in that range. Long input values are rendered with both ends visible and the middle elided as `<head> …(N more chars; use event_detail)… <tail>` — when you see that marker on a typing event, call `event_detail` to read the full string before assuming the head and tail are the whole content. Rows marked `[has keyframe]` and/or `[has after]` have screenshots that will be attached when you call `event_detail` on that index. |
 | `event_detail`    | `event_index`           | Full JSON payload for one event, plus inline keyframe screenshots: a `before` keyframe (target element highlighted immediately before the action) and, when the row is marked `[has after]`, an `after` keyframe (page state immediately after — e.g. destination page if a click navigated). |
-| `normalized_steps`| (none)                  | Rule-based pre-processed step list             |
+| `normalized_steps`| (none)                  | Rule-based pre-processed step list. For `[form]` steps the final value typed into each anchor is shown on a `field …<selector> final_value="…"` line — use this as your primary signal for what the user actually typed into a rich-text editor body, not just the URLs that appear at the start of the value. The instructions a user types into a doc body for the replay agent often live in the trailing portion of `final_value`. |
 
 ### file (FileEditorTool)
 Write the Routine file. Use `create` to write the initial draft to the path provided in your instructions, then `str_replace_editor` to revise sections.
