@@ -15,10 +15,14 @@ You have these browser tools:
 - `mouse`: move, click, drag, scroll. `move` and `drag` take `(x, y)` estimated from the screenshot. `click` commits at the cursor's current position — `move` first to retarget.
 - `keyboard`: type text and press named keys at the current focus.
 - `dialog`: handle browser dialogs. If a dialog is open, handle it before anything else.
+- `select_option`: pick option(s) on a native `<select>` after clicking it.
+- `upload_file`: attach file(s) to an `<input type="file">` after clicking it.
 
 A virtual cursor (white-and-black arrow with a red dot and pulsing ring at the click point) is rendered into the page DOM and appears in every screenshot. **The red dot is the click point.**
 
 Every action commits on the first call.
+
+Native `<select>` dropdowns and OS file pickers do not appear in screenshots. When `mouse click` lands on one, the observation describes what was focused — the option list or file-input metadata. Then call `select_option` (with the desired value/label) or `upload_file` (with absolute path(s)). Custom `<div>`-based dropdowns render in the page DOM, so click their visible options directly.
 </BROWSER_CAPABILITIES>
 
 <TRUST_BOUNDARIES>

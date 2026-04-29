@@ -15,9 +15,20 @@ You have these browser tools:
 - `mouse`: move, click, drag, and scroll the virtual cursor. Emit target coordinates `(x, y)` (and `(x2, y2)` for drag) as integers from the screenshot.
 - `keyboard`: type text and press named keys at the current focus.
 - `dialog`: handle browser dialogs. If a dialog is open, handle it before anything else.
+- `select_option`: pick option(s) on a native `<select>` after clicking it.
+- `upload_file`: attach file(s) to an `<input type="file">` after clicking it.
 
 Every action commits in one call. The next observation tells you whether it landed.
 </BROWSER_CAPABILITIES>
+
+<NATIVE_FORM_CONTROLS>
+Native `<select>` dropdowns and OS file pickers render in browser/OS chrome and never appear in the screenshot. When `mouse click` lands on one, the observation describes what was focused — the dropdown's options or the file input's metadata — instead of opening the OS-level UI.
+
+- For a native `<select>`: `mouse move` over it → `mouse click` → read the option list in the observation → call `select_option` with the desired value or label.
+- For an `<input type="file">` (including labels and styled buttons that wrap one): `mouse move` over it → `mouse click` → call `upload_file` with the absolute path(s).
+
+Custom dropdowns built from `<div>`/`<ul>` (Listbox, Combobox, etc.) render in the page DOM, so use plain `mouse` clicks on the visible options.
+</NATIVE_FORM_CONTROLS>
 
 <VISUAL_GROUNDING>
 The workflow is visual-first. Follow the loop: **OBSERVE → REASON → ACT**.
