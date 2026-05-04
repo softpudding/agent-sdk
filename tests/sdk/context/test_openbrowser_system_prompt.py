@@ -70,7 +70,7 @@ def test_small_rendering_omits_javascript_execute_fallback() -> None:
     message = _render_system_prompt(small_model=True)
 
     assert "`javascript_execute`" not in message
-    assert "fallback JavaScript execution tool" in message
+    assert "fallback JavaScript execution tool" not in message
 
 
 def test_both_renderings_forbid_top_level_scroll_tool() -> None:
