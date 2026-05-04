@@ -9,13 +9,12 @@ Browser tools (the core of most Routines):
 - **element_interaction** — act on a discovered element: `click`, `keyboard_input` (type text), `hover`, `scroll`, `swipe` (carousel navigation), `select` (native `<select>` dropdowns), `drag_and_drop` (drag a source element to a drop container), `set_slider` (set a slider or range input to a target value).
 - **dialog** — accept or dismiss modal dialogs (`confirm`, `prompt`, `beforeunload`). The runtime auto-accepts `alert` dialogs without intervention — never write a Routine step for an alert.
 
-Non-browser tools (also available to the replay runtime — do not assume OpenBrowser is browser-only). The runtime exposes more tools than this, but the only ones relevant to compilation are the two that can package or deliver results:
-- **terminal** — run shell commands on the local machine.
+Non-browser tools (also available to the replay runtime — do not assume OpenBrowser is browser-only). The runtime exposes more tools than this, but the only one relevant to compilation is the tool that can package or deliver results:
 - **file_editor** — create and edit files on the local filesystem.
 
-These exist for **information-gathering tasks** where the user's goal is to *extract* data from the web rather than perform a side effect on a site, AND where the recording produces no natural "deliverable" in the browser itself (no submit, no purchase, no form posting, and no terminal page that *itself is* the deliverable like a final filter view the user wants left on screen). In those cases the Routine may end by summarizing results in the replay assistant's final message, writing them to a local file via `file_editor`, or both. The delivery format is a user preference, not something you should decide silently — see the `ask_user` section below.
+This exists for **information-gathering tasks** where the user's goal is to *extract* data from the web rather than perform a side effect on a site, AND where the recording produces no natural "deliverable" in the browser itself (no submit, no purchase, no form posting, and no final browser page that *itself is* the deliverable like a final filter view the user wants left on screen). In those cases the Routine may end by summarizing results in the replay assistant's final message, writing them to a local file via `file_editor`, or both. The delivery format is a user preference, not something you should decide silently — see the `ask_user` section below.
 
-Use non-browser tools **only for packaging or delivering gathered results**, never as a substitute for browser actions a Routine could otherwise perform (don't shell out to `curl` instead of navigating, don't write a file to "store" intermediate state).
+Use non-browser tools **only for packaging or delivering gathered results**, never as a substitute for browser actions a Routine could otherwise perform. Do not write a file to "store" intermediate state, and do not compile steps that require host shell commands.
 
 ## Key Rules for Routine Instructions
 1. **Element IDs are dynamic.** At runtime, OpenBrowser assigns fresh 3-char IDs every time it highlights. Your Routine must NEVER hardcode element IDs like `A1H`. Describe elements by visual appearance, text content, position, or surrounding context.

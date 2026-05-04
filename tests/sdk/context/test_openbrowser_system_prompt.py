@@ -22,6 +22,15 @@ def _render_system_prompt(**kwargs) -> str:
     )
 
 
+def _render_compiler_prompt(**kwargs) -> str:
+    return render_template(
+        prompt_dir=str(PROMPT_DIR),
+        template_name="system_prompt_compiler.j2",
+        security_policy_filename="security_policy.j2",
+        **kwargs,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Shared guarantees — must hold for BOTH the large and small renderings.
 # ---------------------------------------------------------------------------
@@ -36,15 +45,32 @@ def test_both_renderings_stay_browser_focused() -> None:
         assert "When committing changes, use `git status`" not in message
         assert "When terminating processes:" not in message
         assert "If you encounter missing dependencies:" not in message
+        assert "bash" not in message.lower()
+        assert "terminal" not in message.lower()
 
 
-def test_both_renderings_list_all_four_browser_tools() -> None:
+def test_both_renderings_list_core_browser_tools() -> None:
     for kwargs in ({}, {"small_model": True}):
         message = _render_system_prompt(**kwargs)
         assert "`tab`: manage tabs" in message
         assert "`highlight`: discover visible interactive elements" in message
         assert "`element_interaction`: the only tool that acts on an element" in message
         assert "`dialog`: handle browser dialogs" in message
+
+
+def test_large_rendering_lists_javascript_execute_fallback() -> None:
+    message = _render_system_prompt()
+
+    assert "`javascript_execute`: run bounded JavaScript" in message
+    assert "Use it only after the normal visual workflow is insufficient" in message
+    assert "do not use it for routine clicking" in message
+
+
+def test_small_rendering_omits_javascript_execute_fallback() -> None:
+    message = _render_system_prompt(small_model=True)
+
+    assert "`javascript_execute`" not in message
+    assert "fallback JavaScript execution tool" in message
 
 
 def test_both_renderings_forbid_top_level_scroll_tool() -> None:
@@ -406,6 +432,15 @@ def test_model_tier_tag_names_do_not_leak() -> None:
         assert "LARGE_MODEL_GUIDANCE" not in message
         assert "small_model" not in message
         assert "large_model" not in message
+
+
+def test_compiler_prompt_does_not_offer_terminal_for_replay() -> None:
+    message = _render_compiler_prompt()
+
+    assert "**file_editor**" in message
+    assert "**terminal**" not in message
+    assert "shell commands" in message
+    assert "do not compile steps that require host shell commands" in message
 
 
 # ---------------------------------------------------------------------------
