@@ -80,6 +80,7 @@ Two-stage flow:
 **Stage 2 — Confirmation preview.**
 - YELLOW preview (`click`, `keyboard_input`, `select`): zoomed screenshot with a YELLOW box on the target. Confirm only when the yellow target matches the intended visual position plus any explicit tool cue. If the box is on the wrong element — wrong label, position, or control type — DO NOT call `confirm_*`; abandon by calling `tab view` or `highlight` and pick a different `element_id`. Confirming a wrong preview is a hard error: it clicks the wrong thing.
 - Container preview (`drag_and_drop`): zoomed drop container with inner elements in orange. Use `confirm_drag_and_drop` with optional `relative_to` + `position` (`"before"`/`"after"`) for precise placement; omit to drop at end.
+- Pixel-click preview (`mouse` `click` / `drag` in dense areas): zoomed crop with a YELLOW box on the hit control (or no yellow box if the click landed between controls), plus orange dashed outlines on nearby candidates. The message lists each candidate's HTML and center coordinates in [0, 1000] space. Reply with `mouse` `action: "confirm"` to commit, or re-emit `move` + `click` (or `drag`) aimed at a listed candidate center.
 - If the page changed before you confirm, discard and rediscover.
 
 `hover`, `scroll`, `swipe`, and `set_slider` execute immediately without confirmation.

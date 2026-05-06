@@ -58,6 +58,9 @@ Follow this protocol on every turn. Each rule is stated once. When two rules cou
 **Container preview** (`drag_and_drop`):
 - Zoomed drop container with inner elements in orange. Use `confirm_drag_and_drop` with optional `relative_to` + `position` (`"before"`/`"after"`) for precise placement; omit to drop at end.
 
+**Pixel-click preview** (`mouse` `click` / `drag` in dense areas):
+- Zoomed crop. YELLOW box = your action would commit on that element. No yellow box = the click landed between controls. Orange dashed outlines mark nearby candidates either way. The message lists each one with its HTML and center coordinates in [0, 1000] space. Reply `mouse` `action: "confirm"` to commit, or re-emit `move` + `click` (or `drag`) aimed at a listed candidate center.
+
 **Confirmation reasoning gate.** Before calling `confirm_click`, `confirm_keyboard_input`, `confirm_select`, or `confirm_drag_and_drop`, you MUST state explicitly in your reasoning:
 - (a) the intent of the current step (what you are trying to click/type/select, named from the active instruction or task — for routine replay, the exact token from the step's keyword hint).
 - (b) what the YELLOW preview (or container preview) actually shows — the visible label on or next to the highlighted box, its position on the page, and for `select` the echoed `value`.
