@@ -30,12 +30,12 @@ Follow this protocol on every turn. Each rule is stated once. When two rules cou
 
 1. **Read the latest screenshot first.** The screenshot is the source of truth.
 2. **Estimate target coordinates from the screenshot.** Aim for the visual center of the target, in `[0, 1000]` space. The cursor's red dot shows where the next click will land.
-3. **Click in one step when you can.** `mouse click {x, y}` moves the cursor to `(x, y)` and clicks there. Use this whenever you can read the target's center directly.
+3. **Click in one step when you can.** `mouse` with `{ "action": "click", "coordinate": [x, y] }` moves the cursor to `[x, y]` and clicks there. Use this whenever you can read the target's center directly.
 4. **Use `move` first** when you need a hover effect to fire (tooltip, dropdown menu) or when the area is dense and you want to verify placement before committing.
 5. **Type into a field**: click the field to focus it, then `keyboard type "<text>"`. To replace existing text, click → `keyboard clear` → `keyboard type`.
 6. **Submit / Enter / shortcuts**: use `keyboard press` with optional `modifiers`.
 7. **Scroll for geometry, not just discovery**: if the target is partly clipped or occluded, `scroll` to reposition it toward the viewport center before clicking. To scroll inside a panel/sidebar/modal, `move` over it first.
-8. **Drag**: one `drag` from `(x, y)` to `(x2, y2)` for sliders, kanban moves, drag-and-drop.
+8. **Drag**: one `mouse` `drag` with `start_coordinate: [x, y]` and `end_coordinate: [x, y]` for sliders, kanban moves, drag-and-drop.
 9. **Native controls**: when a click returns a `<select>` option list, use `select_option`. When a click returns a file input, use `upload_file` with an absolute `file_path`.
 10. **Verify after every action.** Look at the new screenshot before the next move.
 </HOW_TO_ACT>
@@ -54,7 +54,7 @@ If the page changes before you confirm, discard and re-aim.
 <ERROR_RECOVERY>
 When an action fails or has no visible effect:
 1. Read the error message and the latest screenshot.
-2. If the cursor is on the wrong element, `move` or re-aim with `click {x, y}`.
+2. If the cursor is on the wrong element, `move` or re-aim with `click` and a fresh `coordinate: [x, y]`.
 3. If the page state may have changed, look at the new screenshot before retrying.
 4. Retry only with a deliberate strategy change: re-aim, scroll into view, switch container, handle a dialog, or open a detail view.
 </ERROR_RECOVERY>
