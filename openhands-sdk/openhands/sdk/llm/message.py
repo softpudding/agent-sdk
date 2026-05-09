@@ -1,4 +1,6 @@
 import json
+import re
+import uuid
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Any, ClassVar, Literal
@@ -583,6 +585,11 @@ class Message(BaseModel):
         Provider-agnostic mapping for reasoning:
         - Prefer `message.reasoning_content` if present (LiteLLM normalized field)
         - Extract `thinking_blocks` from content array (Anthropic-specific)
+
+        Note: per-provider quirks (e.g. qwen-flash emitting qwen3-coder
+        `<tool_call>` XML in reasoning_content) are handled by callers via
+        `recover_qwen_xml_tool_calls` after this conversion. Keeping this
+        method provider-agnostic.
         """
         assert message.role != "function", "Function role is not supported"
 
@@ -692,6 +699,119 @@ class Message(BaseModel):
             tool_calls=tool_calls or None,
             responses_reasoning_item=responses_reasoning_item,
         )
+
+
+# --- qwen3-coder-style XML tool-call recovery -------------------------------
+# qwen3-flash (and similar small qwen variants) sometimes fail their native
+# function-calling head and fall back to emitting tool calls in the
+# qwen3-coder training format as plain text:
+#   <tool_call>
+#   <function=NAME>
+#   <parameter=KEY>VALUE</parameter>
+#   ...
+#   </function>
+#   </tool_call>
+# DashScope's flash deployment ships this raw, and with thinking-mode active
+# it lands in `reasoning_content` rather than `content`. This helper converts
+# such occurrences back into structured `MessageToolCall` objects so the
+# conversation history stays in the canonical shape.
+_QWEN_TOOL_CALL_RE = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>", re.DOTALL)
+_QWEN_FUNC_RE = re.compile(r"<function=([^>\s]+)>\s*(.*?)\s*</function>", re.DOTALL)
+_QWEN_PARAM_RE = re.compile(r"<parameter=([^>\s]+)>\s*(.*?)\s*</parameter>", re.DOTALL)
+
+
+def _extract_qwen_xml_tool_calls(
+    text: str,
+) -> tuple[list[MessageToolCall], str]:
+    """Parse qwen3-coder-style <tool_call> XML out of `text`.
+
+    Returns (tool_calls, cleaned_text). Every parsed <tool_call>...</tool_call>
+    block is removed from `cleaned_text`; surrounding prose is preserved.
+    Returns ([], text) unchanged if no parseable block is found.
+    """
+    if not text or "<tool_call>" not in text:
+        return [], text
+
+    calls: list[MessageToolCall] = []
+    for tc_block in _QWEN_TOOL_CALL_RE.finditer(text):
+        fn = _QWEN_FUNC_RE.search(tc_block.group(1))
+        if not fn:
+            continue
+        name = fn.group(1).strip()
+        body = fn.group(2)
+        args: dict[str, Any] = {}
+        for p in _QWEN_PARAM_RE.finditer(body):
+            key = p.group(1).strip()
+            raw = p.group(2).strip()
+            try:
+                args[key] = json.loads(raw)
+            except (ValueError, json.JSONDecodeError):
+                args[key] = raw
+        calls.append(
+            MessageToolCall(
+                id=f"qwen_xml_{uuid.uuid4().hex[:12]}",
+                name=name,
+                arguments=json.dumps(args),
+                origin="completion",
+            )
+        )
+
+    if not calls:
+        return [], text
+
+    cleaned = _QWEN_TOOL_CALL_RE.sub("", text).strip()
+    return calls, cleaned
+
+
+def recover_qwen_xml_tool_calls(message: "Message") -> "Message":
+    """Recover qwen3-coder-style XML tool calls embedded in text fields.
+
+    If `message.tool_calls` is empty and a <tool_call>...</tool_call> block
+    is found in `reasoning_content` or in any TextContent, parse it into
+    structured `MessageToolCall`s and return a new Message with the XML
+    stripped from those text fields. Otherwise return `message` unchanged.
+
+    Caller is responsible for gating by model (e.g. qwen-only).
+    """
+    if message.tool_calls:
+        return message
+
+    parsed_total: list[MessageToolCall] = []
+    new_rc = message.reasoning_content
+    if new_rc:
+        parsed_rc, new_rc_clean = _extract_qwen_xml_tool_calls(new_rc)
+        if parsed_rc:
+            parsed_total.extend(parsed_rc)
+            new_rc = new_rc_clean or None
+
+    new_content: list[TextContent | ImageContent] = []
+    content_changed = False
+    for c in message.content:
+        if isinstance(c, TextContent):
+            parsed_c, cleaned_c = _extract_qwen_xml_tool_calls(c.text)
+            if parsed_c:
+                parsed_total.extend(parsed_c)
+                content_changed = True
+                if cleaned_c:
+                    new_content.append(TextContent(text=cleaned_c))
+                continue
+        new_content.append(c)
+
+    if not parsed_total:
+        return message
+
+    logger.info(
+        "Recovered %d qwen-xml tool call(s) from reasoning/content",
+        len(parsed_total),
+    )
+
+    return message.model_copy(
+        update={
+            "tool_calls": parsed_total,
+            "reasoning_content": new_rc,
+            "content": new_content if content_changed else message.content,
+        }
+    )
 
 
 def content_to_str(contents: Sequence[TextContent | ImageContent]) -> list[str]:

@@ -84,6 +84,7 @@ from openhands.sdk.llm.exceptions import (
 from openhands.sdk.llm.llm_response import LLMResponse
 from openhands.sdk.llm.message import (
     Message,
+    recover_qwen_xml_tool_calls,
 )
 from openhands.sdk.llm.mixins.non_native_fc import NonNativeToolCallingMixin
 from openhands.sdk.llm.options.chat_options import select_chat_options
@@ -749,6 +750,12 @@ class LLM(BaseModel, RetryMixin, NonNativeToolCallingMixin):
             # Convert the first choice to an OpenHands Message
             first_choice = resp["choices"][0]
             message = Message.from_llm_chat_message(first_choice["message"])
+
+            # qwen-flash variants sometimes emit qwen3-coder-style <tool_call>
+            # XML in reasoning_content/content instead of structured tool_calls.
+            # Recover them so the conversation history sees a proper tool call.
+            if "qwen" in (self.model or "").lower():
+                message = recover_qwen_xml_tool_calls(message)
 
             # Get current metrics snapshot
             metrics_snapshot = MetricsSnapshot(
